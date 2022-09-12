@@ -39,7 +39,7 @@ fn get_first_capture<'a>(caps: &'a Captures) -> Option<&'a str> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pretty_assertions::assert_eq;
+    use pretty_assertions::{assert_eq, assert_ne};
 
     #[test]
     fn works_on_simple_path() {
@@ -80,6 +80,16 @@ mod tests {
         assert_eq!(
             normalized,
             normalize_path_hint("/user/:id/account/{action}/".to_string())
+        );
+    }
+
+    #[test]
+    fn does_not_normalize_unknown_format() {
+        let normalized = "/user/{id}/account/{action}/";
+
+        assert_ne!(
+            normalized,
+            normalize_path_hint("/user/:id/account/<action>/".to_string())
         );
     }
 }

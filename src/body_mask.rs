@@ -12,37 +12,49 @@ pub enum Error {
 }
 
 pub struct BodyMask {
-    string_masks: Vec<(Regex, String)>,
-    number_masks: Vec<(Regex, i32)>,
+    string_masks: Regex,
+    number_masks: Regex,
 }
 
 impl BodyMask {
-    pub fn try_new_with_custom_masks(
+    pub fn try_new(
         string_field_names: HashMap<String, String>,
         number_field_names: HashMap<String, i32>,
     ) -> Result<Self, Error> {
         let mut string_masks: Vec<(Regex, String)> = Vec::with_capacity(string_field_names.len());
-        let mut number_masks: Vec<(Regex, i32)> = Vec::with_capacity(number_field_names.len());
+        let string_mask_regex = String::with_capacity(
+            (string_field_names.len() * 32) + (string_field_names.len() * 24),
+        );
 
-        // build up string field regexes
+        // build up single regex from string field regexes
         for (field_name, replacement_value) in string_field_names {
-            let regex_string = format!(r##"("{}": *)(".*?[^\\]")( *[, \n\r}}]?)"##, field_name);
-
-            let regex =
-                Regex::new(&regex_string).map_err(|_| Error::StringField(field_name.clone()))?;
-
-            string_masks.push((regex, replacement_value));
+            string_mask_regex.push_str(&format!(
+                r##"("{}": *)(".*?[^\\]")( *[, \n\r}}]?)|"##,
+                field_name
+            ));
         }
 
-        // build up number field regex's
+        // drop the last "|"
+        string_mask_regex.pop();
+
+        let string_masks =
+            Regex::new(&string_mask_regex).map_err(|_| Error::StringField(string_mask_regex))?;
+
+        // build number masks regex
+        let mut number_masks: Vec<(Regex, String)> = Vec::with_capacity(string_field_names.len());
+        let number_mask_regex = String::with_capacity(
+            (string_field_names.len() * 32) + (string_field_names.len() * 12),
+        );
+
         for (field_name, replacement_value) in number_field_names {
-            let regex_string = format!(r##"("{}": *)(".*?[^\\]")( *[, \n\r}}]?)"##, field_name);
-
-            let regex =
-                Regex::new(&regex_string).map_err(|_| Error::NumberField(field_name.clone()))?;
-
-            number_masks.push((regex, replacement_value));
+            number_mask_regex.push_str(&format!(
+                r##"("{}": *)(".*?[^\\]")( *[, \n\r}}]?)|"##,
+                field_name
+            ));
         }
+
+        let number_masks =
+            Regex::new(&number_mask_regex).map_err(|_| Error::NumberField(number_mask_regex))?;
 
         Ok(Self {
             string_masks,

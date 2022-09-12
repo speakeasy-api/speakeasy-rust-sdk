@@ -5,8 +5,14 @@ version = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
+# utils
 har = "0.7.1"
+once_cell = "1.14.0"
+regex = "1.6.0"
 
 # serialization / deserialization
 serde = {version = "1.0.144", features = ["derive"]}
 serde_json = "1.0.85"
+
+[dev-dependencies]
+pretty_assertions = "1.3"

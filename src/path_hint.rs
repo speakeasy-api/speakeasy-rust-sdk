@@ -13,15 +13,15 @@ pub fn normalize_path_hint(path_hint: String) -> String {
         };
 
         // look through the captures and use the first non-empty capture
-        get_first_capture(caps)
-            .map(|matched| {
-                if caps[0].ends_with("/") {
-                    Cow::Owned(format!("{{{}}}/", matched))
-                } else {
-                    Cow::Owned(format!("{{{}}}", matched))
-                }
-            })
-            .unwrap_or_else(|| Cow::Owned(caps[0].to_string()))
+        if let Some(matched) = get_first_capture(caps) {
+            if caps[0].ends_with("/") {
+                Cow::Owned(format!("{{{}}}/", matched))
+            } else {
+                Cow::Owned(format!("{{{}}}", matched))
+            }
+        } else {
+            Cow::Owned(caps[0].to_string())
+        }
     })
     .into_owned()
 }

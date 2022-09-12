@@ -34,7 +34,7 @@ impl BodyMask {
             string_masks.push((regex, replacement_value));
         }
 
-        // build up number field regexes
+        // build up number field regex's
         for (field_name, replacement_value) in number_field_names {
             let regex_string = format!(r##"("{}": *)(".*?[^\\]")( *[, \n\r}}]?)"##, field_name);
 
@@ -48,5 +48,44 @@ impl BodyMask {
             string_masks,
             number_masks,
         })
+    }
+
+    pub fn mask(&self, body: String) -> String {}
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use maplit::hashmap;
+    use pretty_assertions::assert_eq;
+
+    struct Test {
+        name: &'static str,
+        body: &'static str,
+        expected: &'static str,
+        string_masks: HashMap<String, String>,
+        number_masks: HashMap<String, i32>,
+    }
+
+    #[test]
+    fn run() {
+        let tests: Vec<Test> = vec![Test {
+            name: "successfully masks body with single string field",
+            body: r#"{"test": "test"}"#,
+            expected: r#"{"test": "testmask"}"#,
+            string_masks: hashmap! {
+                "test".to_string() => "testmask".to_string(),
+            },
+            number_masks: HashMap::new(),
+        }];
+
+        for test in tests {
+            assert_eq!(
+                test.expected,
+                BodyMask::try_new_with_custom_masks(test.string_masks, test.number_masks)
+                    .unwrap()
+                    .mask(test.body.to_string())
+            );
+        }
     }
 }

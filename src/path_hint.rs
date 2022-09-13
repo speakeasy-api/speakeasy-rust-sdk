@@ -7,6 +7,7 @@ use crate::util;
 
 static RE: Lazy<Regex> = Lazy::new(|| Regex::new(r#"\{(.*?:*.*?)\}/|:(.+?)/|:(.*)|\*"#).unwrap());
 
+/// Normalize the path hint given from different web frameworks to a the OpenAPI spec
 pub fn normalize_path_hint(path_hint: String) -> String {
     RE.replace_all(&path_hint, |caps: &Captures| {
         // if its a wildcard return capture replacement early

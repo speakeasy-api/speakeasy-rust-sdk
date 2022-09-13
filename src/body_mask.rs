@@ -5,11 +5,6 @@ use thiserror::Error;
 
 use crate::util;
 
-struct CaptureMatch<'a> {
-    name: Cow<'a, str>,
-    value: Cow<'a, str>,
-}
-
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("invalid string field name: {0}")]
@@ -25,6 +20,8 @@ pub struct BodyMask {
 }
 
 impl BodyMask {
+    /// Create a new BodyMask struct using string_field_names and number_field_names
+    /// The regex will be compiled and stored in the struct so it can be used reused, for repeated calls
     pub fn try_new(
         string_field_names: HashMap<String, String>,
         number_field_names: HashMap<String, i32>,
@@ -83,7 +80,9 @@ impl BodyMask {
         })
     }
 
+    /// Will use the regexes stored in the struct to mask the body
     pub fn mask(&self, body: String) -> String {
+        // mask string fields
         let body = if let Some(string_mask_regex) = self.string_masks.as_ref() {
             string_mask_regex.replace_all(&body, |caps: &Captures| {
                 if let Some(field) = util::get_first_capture(caps) {
@@ -100,6 +99,7 @@ impl BodyMask {
             Cow::Owned(body)
         };
 
+        /// mask number fields
         let body = if let Some(number_mask_regex) = self.number_masks.as_ref() {
             number_mask_regex.replace_all(&body, |caps: &Captures| {
                 if let Some(field) = util::get_first_capture(caps) {
@@ -127,6 +127,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     struct Test {
+        #[allow(dead_code)]
         name: &'static str,
         body: &'static str,
         expected: &'static str,

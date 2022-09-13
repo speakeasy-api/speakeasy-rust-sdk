@@ -3,6 +3,8 @@ mod path_hint;
 mod util;
 
 pub type Masking = masking::Masking;
+pub type StringMaskingOption = masking::StringMaskingOption;
+pub type NumberMaskingOption = masking::NumberMaskingOption;
 
 #[derive(Debug, Clone)]
 pub struct Config {

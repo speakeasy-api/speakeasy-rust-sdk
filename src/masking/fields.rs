@@ -26,6 +26,12 @@ impl From<&[&str]> for Fields {
     }
 }
 
+impl From<Vec<&str>> for Fields {
+    fn from(fields: Vec<&str>) -> Self {
+        Self(fields.iter().map(ToString::to_string).collect())
+    }
+}
+
 impl From<Fields> for Vec<String> {
     fn from(fields: Fields) -> Self {
         fields.0

@@ -31,6 +31,12 @@ impl From<String> for StringMaskingOption {
     }
 }
 
+impl From<&str> for StringMaskingOption {
+    fn from(mask: &str) -> Self {
+        StringMaskingOption::SingleMask(mask.to_string())
+    }
+}
+
 impl From<Vec<String>> for StringMaskingOption {
     fn from(masks: Vec<String>) -> Self {
         StringMaskingOption::MultipleMasks(masks)
@@ -43,8 +49,25 @@ impl From<&[&str]> for StringMaskingOption {
     }
 }
 
+impl From<Vec<&str>> for StringMaskingOption {
+    fn from(masks: Vec<&str>) -> Self {
+        StringMaskingOption::MultipleMasks(masks.iter().map(ToString::to_string).collect())
+    }
+}
+
 impl From<HashMap<String, String>> for StringMaskingOption {
     fn from(masks: HashMap<String, String>) -> Self {
+        StringMaskingOption::AssociatedMasks(masks)
+    }
+}
+
+impl From<HashMap<&str, &str>> for StringMaskingOption {
+    fn from(masks: HashMap<&str, &str>) -> Self {
+        let masks = masks
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect();
+
         StringMaskingOption::AssociatedMasks(masks)
     }
 }

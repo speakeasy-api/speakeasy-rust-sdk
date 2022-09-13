@@ -18,6 +18,7 @@ pub enum Error {
     NumberField(String),
 }
 
+#[derive(Debug)]
 pub struct BodyMask {
     string_masks: Option<Regex>,
     number_masks: Option<Regex>,
@@ -33,20 +34,16 @@ impl BodyMask {
                 (string_field_names.len() * 32) + (string_field_names.len() * 24),
             );
 
-            // // start string mask regex with a parent group
-            // string_mask_regex.push('(');
-
             // build up single regex from string field regexes
-            for (field_name, replacement_value) in string_field_names {
+            for (field_name, _replacement_value) in string_field_names {
                 string_mask_regex.push_str(&format!(
                     r##"(?:("{}"): *)(".*?[^\\]")(?: *[, \n\r}}]?)|"##,
                     field_name
                 ));
             }
 
-            // drop the last "|" and close off parent capture group
+            // drop the last "|"
             string_mask_regex.pop();
-            // string_mask_regex.push(')');
 
             let string_masks = Regex::new(&string_mask_regex)
                 .map_err(|_| Error::StringField(string_mask_regex))?;
@@ -62,19 +59,15 @@ impl BodyMask {
                 (number_field_names.len() * 32) + (number_field_names.len() * 12),
             );
 
-            // start number mask regex with a parent group
-            number_mask_regex.push('(');
-
-            for (field_name, replacement_value) in number_field_names {
+            for (field_name, _replacement_value) in number_field_names {
                 number_mask_regex.push_str(&format!(
-                    r##"("{}": *)(".*?[^\\]")( *[, \n\r}}]?)|"##,
+                    r##"(?:("{}"): *)(-?[0-9]+\.?[0-9]*)( *[, \n\r}}]?)|"##,
                     field_name
                 ));
             }
 
-            // drop the last "|" and close off parent capture group
+            // drop the last "|"
             number_mask_regex.pop();
-            number_mask_regex.push(')');
 
             let number_masks = Regex::new(&number_mask_regex)
                 .map_err(|_| Error::NumberField(number_mask_regex))?;
@@ -91,11 +84,8 @@ impl BodyMask {
     }
 
     pub fn mask(&self, body: String) -> String {
-        let body = self
-            .string_masks
-            .as_ref()
-            .unwrap()
-            .replace_all(&body, |caps: &Captures| {
+        let body = if let Some(string_mask_regex) = self.string_masks.as_ref() {
+            string_mask_regex.replace_all(&body, |caps: &Captures| {
                 if let Some(field) = util::get_first_capture(caps) {
                     format!(
                         r#"{}: "testmask"{}"#,
@@ -105,7 +95,26 @@ impl BodyMask {
                 } else {
                     caps[0].to_string()
                 }
-            });
+            })
+        } else {
+            Cow::Owned(body)
+        };
+
+        let body = if let Some(number_mask_regex) = self.number_masks.as_ref() {
+            number_mask_regex.replace_all(&body, |caps: &Captures| {
+                if let Some(field) = util::get_first_capture(caps) {
+                    format!(
+                        r#"{}: -123456789{}"#,
+                        field,
+                        caps[0].chars().last().unwrap()
+                    )
+                } else {
+                    caps[0].to_string()
+                }
+            })
+        } else {
+            body
+        };
 
         body.to_string()
     }
@@ -135,7 +144,34 @@ mod tests {
                 string_masks: hashmap! {
                     "test".to_string() => "testmask".to_string(),
                 },
-                number_masks: HashMap::new(),
+                number_masks: hashmap! {},
+            },
+            Test {
+                name: "successfully masks body with single int field",
+                body: r#"{"test": 123}"#,
+                expected: r#"{"test": -123456789}"#,
+                string_masks: hashmap! {},
+                number_masks: hashmap! {
+                    "test".to_string() => -123456789,
+                },
+            },
+            Test {
+                name: "successfully masks body with single negative field",
+                body: r#"{"test": -123}"#,
+                expected: r#"{"test": -123456789}"#,
+                string_masks: hashmap! {},
+                number_masks: hashmap! {
+                    "test".to_string() => -123456789,
+                },
+            },
+            Test {
+                name: "successfully masks body with single float field",
+                body: r#"{"test": 123.123}"#,
+                expected: r#"{"test": -123456789}"#,
+                string_masks: hashmap! {},
+                number_masks: hashmap! {
+                    "test".to_string() => -123456789,
+                },
             },
             Test {
                 name: "successfully masks body with multiple masking fields",
@@ -145,16 +181,55 @@ mod tests {
                     "test".to_string() => "testmask".to_string(),
                     "another_test".to_string() => "testmask".to_string(),
                 },
-                number_masks: HashMap::new(),
+                number_masks: hashmap! {},
+            },
+            Test {
+                name: "successfully masks body with nested fields",
+                body: r#"{"test": {"test": "test", "test1": 123}}"#,
+                expected: r#"{"test": {"test": "testmask", "test1": -123456789}}"#,
+                string_masks: hashmap! {
+                    "test".to_string() => "testmask".to_string(),
+                },
+                number_masks: hashmap! {
+                    "test1".to_string() => -123456789,
+                },
+            },
+            Test {
+                name: "successfully masks formatted body",
+                body: r#"
+                "test": {
+                    "test": "test",
+                    "test1": 123
+                }"#,
+                expected: r#"
+                "test": {
+                    "test": "testmask",
+                    "test1": -123456789
+                }"#,
+                string_masks: hashmap! {
+                    "test".to_string() => "testmask".to_string(),
+                },
+                number_masks: hashmap! {
+                    "test1".to_string() => -123456789,
+                },
+            },
+            Test {
+                name: "successfully masks body with complex string field",
+                body: r#"{"test": "\",{abc}: .\""}"#,
+                expected: r#"{"test": "testmask"}"#,
+                string_masks: hashmap! {
+                    "test".to_string() => "testmask".to_string()
+                },
+                number_masks: hashmap! {},
             },
         ];
 
         for test in tests {
             assert_eq!(
-                test.expected,
                 BodyMask::try_new(test.string_masks, test.number_masks)
                     .unwrap()
-                    .mask(test.body.to_string())
+                    .mask(test.body.to_string()),
+                test.expected,
             );
         }
     }

@@ -28,8 +28,9 @@ impl BodyMask {
         number_field_names: HashMap<String, i32>,
     ) -> Result<Self, Error> {
         let string_masks = if !string_field_names.is_empty() {
+            // estimate the size of the final regex string to minimize allocations
             let mut string_mask_regex = String::with_capacity(
-                (string_field_names.len() * 32) + (string_field_names.len() * 24),
+                (string_field_names.len() * 38) + (string_field_names.len() * 24),
             );
 
             // build up single regex from string field regexes
@@ -53,9 +54,9 @@ impl BodyMask {
         };
 
         let number_masks = if !number_field_names.is_empty() {
-            // build number masks regex
+            // estimate the size of the final regex string to minimize allocations
             let mut number_mask_regex = String::with_capacity(
-                (number_field_names.len() * 32) + (number_field_names.len() * 12),
+                (number_field_names.len() * 44) + (number_field_names.len() * 12),
             );
 
             for (field_name, _replacement_value) in number_field_names {

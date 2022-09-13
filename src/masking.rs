@@ -37,4 +37,37 @@ impl Masking {
 
         Ok(())
     }
+
+    pub fn with_request_field_mask_number(
+        &mut self,
+        fields: impl Into<Fields>,
+        masking_option: impl Into<NumberMaskingOption>,
+    ) -> Result<(), Error> {
+        self.request_masks
+            .set_number_field_masks(fields.into(), masking_option.into())?;
+
+        Ok(())
+    }
+
+    pub fn with_response_field_mask_string(
+        &mut self,
+        fields: impl Into<Fields>,
+        masking_option: impl Into<StringMaskingOption>,
+    ) -> Result<(), Error> {
+        self.response_masks
+            .set_string_field_masks(fields.into(), masking_option.into())?;
+
+        Ok(())
+    }
+
+    pub fn with_response_field_mask_number(
+        &mut self,
+        fields: impl Into<Fields>,
+        masking_option: impl Into<NumberMaskingOption>,
+    ) -> Result<(), Error> {
+        self.response_masks
+            .set_number_field_masks(fields.into(), masking_option.into())?;
+
+        Ok(())
+    }
 }

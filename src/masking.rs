@@ -31,7 +31,10 @@ impl Masking {
         &mut self,
         fields: impl Into<Fields>,
         masking_option: impl Into<StringMaskingOption>,
-    ) {
-        todo!()
+    ) -> Result<(), Error> {
+        self.request_masks
+            .set_string_field_masks(fields.into(), masking_option.into())?;
+
+        Ok(())
     }
 }

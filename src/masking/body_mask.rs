@@ -46,6 +46,40 @@ impl<T> BodyMaskInner<T> {
 }
 
 impl BodyMask {
+    pub(crate) fn set_string_field_masks(
+        &mut self,
+        fields: Vec<String>,
+        masks_option: StringMaskingOption,
+    ) -> Result<(), Error> {
+        let string_masks = if !fields.is_empty() {
+            let mut string_mask_regex =
+                String::with_capacity((fields.len() * 32) + (fields.len() * 24));
+
+            // build up single regex from string field regexes
+            for field_name in &fields {
+                let _ = write!(
+                    string_mask_regex,
+                    r##"(?:("{}"): *)(".*?[^\\]")(?: *[, \n\r}}]?)|"##,
+                    regex::escape(field_name)
+                );
+            }
+
+            // drop the last "|"
+            string_mask_regex.pop();
+
+            let string_masks = Regex::new(&string_mask_regex)
+                .map_err(|_| Error::StringField(string_mask_regex))?;
+
+            Some(BodyMaskInner::new(string_masks, fields, masks_option))
+        } else {
+            None
+        };
+
+        self.string_masks = string_masks;
+
+        Ok(())
+    }
+
     /// Create a new BodyMask struct using string_field_names and number_field_names
     /// The regex will be compiled and stored in the struct so it can be used reused, for repeated calls
     pub(crate) fn try_new(

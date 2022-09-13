@@ -8,6 +8,7 @@ use crate::util;
 
 use super::{Fields, NumberMaskingOption, StringMaskingOption};
 
+/// Errors for creating BodyMasks
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("invalid string field name: {0}")]
@@ -16,12 +17,14 @@ pub enum Error {
     NumberField(String),
 }
 
+/// BodyMasks holds information needed to perform masking on a request or response body
 #[derive(Debug, Clone, Default)]
 pub(crate) struct BodyMask {
     string_masks: Option<BodyMaskInner<StringMaskingOption>>,
     number_masks: Option<BodyMaskInner<NumberMaskingOption>>,
 }
 
+/// BodyMaskInner holds the regex, fields and options for masking
 #[derive(Debug, Clone)]
 pub(crate) struct BodyMaskInner<T> {
     regex: Regex,
@@ -29,6 +32,7 @@ pub(crate) struct BodyMaskInner<T> {
     mask_option: T,
 }
 
+// T = StringMaskingOption or NumberMaskingOption
 impl<T> BodyMaskInner<T> {
     fn new(regex: Regex, fields: Vec<String>, mask_option: T) -> Self {
         let fields = fields
@@ -46,6 +50,8 @@ impl<T> BodyMaskInner<T> {
 }
 
 impl BodyMask {
+    /// Creates a BodyMask from a list of string fields to mask
+    /// errors if there is a probably creating the Regex
     pub(crate) fn set_string_field_masks(
         &mut self,
         fields: Fields,
@@ -84,6 +90,8 @@ impl BodyMask {
         Ok(())
     }
 
+    /// Creates a BodyMask from a list of number fields to mask
+    /// errors if there is a probably creating the Regex
     pub(crate) fn set_number_field_masks(
         &mut self,
         fields: Fields,

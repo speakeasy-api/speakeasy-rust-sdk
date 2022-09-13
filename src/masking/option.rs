@@ -128,6 +128,12 @@ impl From<i32> for NumberMaskingOption {
     }
 }
 
+impl From<&[i32]> for NumberMaskingOption {
+    fn from(masks: &[i32]) -> Self {
+        NumberMaskingOption::MultipleMasks(masks.to_vec())
+    }
+}
+
 impl From<Vec<i32>> for NumberMaskingOption {
     fn from(masks: Vec<i32>) -> Self {
         NumberMaskingOption::MultipleMasks(masks)
@@ -137,6 +143,14 @@ impl From<Vec<i32>> for NumberMaskingOption {
 impl From<HashMap<String, i32>> for NumberMaskingOption {
     fn from(masks: HashMap<String, i32>) -> Self {
         NumberMaskingOption::AssociatedMasks(masks)
+    }
+}
+
+impl From<HashMap<&str, i32>> for NumberMaskingOption {
+    fn from(masks: HashMap<&str, i32>) -> Self {
+        NumberMaskingOption::AssociatedMasks(
+            masks.into_iter().map(|(k, v)| (k.to_string(), v)).collect(),
+        )
     }
 }
 

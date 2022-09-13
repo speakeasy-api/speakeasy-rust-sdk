@@ -17,7 +17,7 @@ pub fn normalize_path_hint(path_hint: String) -> String {
 
         // look through the captures and use the first non-empty capture
         if let Some(matched) = util::get_first_capture(caps) {
-            if caps[0].ends_with("/") {
+            if caps[0].ends_with('/') {
                 Cow::Owned(format!("{{{}}}/", matched))
             } else {
                 Cow::Owned(format!("{{{}}}", matched))

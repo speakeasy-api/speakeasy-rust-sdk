@@ -1,6 +1,7 @@
 use std::{borrow::Cow, collections::HashMap};
 
 use regex::{Captures, Regex};
+use std::fmt::Write as _;
 use thiserror::Error;
 
 use crate::util;
@@ -33,10 +34,11 @@ impl BodyMask {
 
             // build up single regex from string field regexes
             for (field_name, _replacement_value) in string_field_names {
-                string_mask_regex.push_str(&format!(
+                let _ = write!(
+                    string_mask_regex,
                     r##"(?:("{}"): *)(".*?[^\\]")(?: *[, \n\r}}]?)|"##,
                     regex::escape(&field_name)
-                ));
+                );
             }
 
             // drop the last "|"
@@ -57,10 +59,11 @@ impl BodyMask {
             );
 
             for (field_name, _replacement_value) in number_field_names {
-                number_mask_regex.push_str(&format!(
+                let _ = write!(
+                    number_mask_regex,
                     r##"(?:("{}"): *)(-?[0-9]+\.?[0-9]*)( *[, \n\r}}]?)|"##,
                     regex::escape(&field_name)
-                ));
+                );
             }
 
             // drop the last "|"

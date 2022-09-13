@@ -99,7 +99,7 @@ impl BodyMask {
             Cow::Owned(body)
         };
 
-        /// mask number fields
+        // mask number fields
         let body = if let Some(number_mask_regex) = self.number_masks.as_ref() {
             number_mask_regex.replace_all(&body, |caps: &Captures| {
                 if let Some(field) = util::get_first_capture(caps) {

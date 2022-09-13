@@ -80,6 +80,38 @@ impl BodyMask {
         Ok(())
     }
 
+    pub(crate) fn set_number_field_masks(
+        &mut self,
+        fields: Vec<String>,
+        masks_option: NumberMaskingOption,
+    ) -> Result<(), Error> {
+        let masks = if !fields.is_empty() {
+            let mut mask_regex = String::with_capacity((fields.len() * 32) + (fields.len() * 24));
+
+            // build up single regex from string field regexes
+            for field_name in &fields {
+                let _ = write!(
+                    mask_regex,
+                    r##"(?:("{}"): *)(-?[0-9]+\.?[0-9]*)( *[, \n\r}}]?)|"##,
+                    regex::escape(field_name)
+                );
+            }
+
+            // drop the last "|"
+            mask_regex.pop();
+
+            let masks = Regex::new(&mask_regex).map_err(|_| Error::NumberField(mask_regex))?;
+
+            Some(BodyMaskInner::new(masks, fields, masks_option))
+        } else {
+            None
+        };
+
+        self.number_masks = masks;
+
+        Ok(())
+    }
+
     /// Create a new BodyMask struct using string_field_names and number_field_names
     /// The regex will be compiled and stored in the struct so it can be used reused, for repeated calls
     pub(crate) fn try_new(

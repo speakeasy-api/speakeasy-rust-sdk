@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::util;
 
-use super::{NumberMaskingOption, StringMaskingOption};
+use super::{Fields, NumberMaskingOption, StringMaskingOption};
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -48,7 +48,7 @@ impl<T> BodyMaskInner<T> {
 impl BodyMask {
     pub(crate) fn set_string_field_masks(
         &mut self,
-        fields: Vec<String>,
+        fields: Fields,
         masks_option: StringMaskingOption,
     ) -> Result<(), Error> {
         let string_masks = if !fields.is_empty() {
@@ -56,7 +56,7 @@ impl BodyMask {
                 String::with_capacity((fields.len() * 32) + (fields.len() * 24));
 
             // build up single regex from string field regexes
-            for field_name in &fields {
+            for field_name in fields.iter() {
                 let _ = write!(
                     string_mask_regex,
                     r##"(?:("{}"): *)(".*?[^\\]")(?: *[, \n\r}}]?)|"##,
@@ -70,7 +70,11 @@ impl BodyMask {
             let string_masks = Regex::new(&string_mask_regex)
                 .map_err(|_| Error::StringField(string_mask_regex))?;
 
-            Some(BodyMaskInner::new(string_masks, fields, masks_option))
+            Some(BodyMaskInner::new(
+                string_masks,
+                fields.to_vec(),
+                masks_option,
+            ))
         } else {
             None
         };
@@ -82,14 +86,14 @@ impl BodyMask {
 
     pub(crate) fn set_number_field_masks(
         &mut self,
-        fields: Vec<String>,
+        fields: Fields,
         masks_option: NumberMaskingOption,
     ) -> Result<(), Error> {
         let masks = if !fields.is_empty() {
             let mut mask_regex = String::with_capacity((fields.len() * 32) + (fields.len() * 24));
 
             // build up single regex from string field regexes
-            for field_name in &fields {
+            for field_name in fields.iter() {
                 let _ = write!(
                     mask_regex,
                     r##"(?:("{}"): *)(-?[0-9]+\.?[0-9]*)( *[, \n\r}}]?)|"##,
@@ -102,7 +106,7 @@ impl BodyMask {
 
             let masks = Regex::new(&mask_regex).map_err(|_| Error::NumberField(mask_regex))?;
 
-            Some(BodyMaskInner::new(masks, fields, masks_option))
+            Some(BodyMaskInner::new(masks, fields.to_vec(), masks_option))
         } else {
             None
         };
@@ -131,7 +135,7 @@ impl BodyMask {
 
         // set string field masks
         body_mask.set_string_field_masks(
-            string_fields,
+            string_fields.into(),
             StringMaskingOption::MultipleMasks(string_masks),
         )?;
 
@@ -145,7 +149,7 @@ impl BodyMask {
 
         // setup number field masks
         body_mask.set_number_field_masks(
-            number_fields,
+            number_fields.into(),
             NumberMaskingOption::MultipleMasks(number_masks),
         )?;
 

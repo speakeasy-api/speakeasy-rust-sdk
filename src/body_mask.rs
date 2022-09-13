@@ -38,7 +38,7 @@ impl BodyMask {
             for (field_name, _replacement_value) in string_field_names {
                 string_mask_regex.push_str(&format!(
                     r##"(?:("{}"): *)(".*?[^\\]")(?: *[, \n\r}}]?)|"##,
-                    field_name
+                    regex::escape(&field_name)
                 ));
             }
 
@@ -62,7 +62,7 @@ impl BodyMask {
             for (field_name, _replacement_value) in number_field_names {
                 number_mask_regex.push_str(&format!(
                     r##"(?:("{}"): *)(-?[0-9]+\.?[0-9]*)( *[, \n\r}}]?)|"##,
-                    field_name
+                    regex::escape(&field_name)
                 ));
             }
 
@@ -219,6 +219,15 @@ mod tests {
                 expected: r#"{"test": "testmask"}"#,
                 string_masks: hashmap! {
                     "test".to_string() => "testmask".to_string()
+                },
+                number_masks: hashmap! {},
+            },
+            Test {
+                name: "successfully masks body with complex field key",
+                body: r#"{"test\"hello\": ": "\",{abc}: .\""}"#,
+                expected: r#"{"test\"hello\": ": "testmask"}"#,
+                string_masks: hashmap! {
+                    r#"test\"hello\": "#.to_string() => "testmask".to_string()
                 },
                 number_masks: hashmap! {},
             },

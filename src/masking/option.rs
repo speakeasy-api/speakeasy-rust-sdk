@@ -50,7 +50,7 @@ impl From<HashMap<String, String>> for StringMaskingOption {
 }
 
 impl StringMaskingOption {
-    pub(crate) fn get_string_mask_replacement<'a, 'b>(
+    pub(crate) fn get_mask_replacement<'a, 'b>(
         &'a self,
         field: &'b str,
         maybe_index: Option<usize>,
@@ -63,7 +63,7 @@ impl StringMaskingOption {
                     masks
                         .get(index)
                         .map(String::as_str)
-                        .unwrap_or(&DEFAULT_STRING_MASK)
+                        .unwrap_or(DEFAULT_STRING_MASK)
                 } else {
                     DEFAULT_STRING_MASK
                 }
@@ -118,13 +118,13 @@ impl From<HashMap<String, i32>> for NumberMaskingOption {
 }
 
 impl NumberMaskingOption {
-    pub(crate) fn get_number_masking_replacement(&self, field: &str, index: usize) -> i32 {
+    pub(crate) fn get_mask_replacement(&self, field: &str, maybe_index: Option<usize>) -> i32 {
         match self {
             Self::None => DEFAULT_NUMBER_MASK,
             Self::SingleMask(mask) => *mask,
             Self::MultipleMasks(ref masks) => {
-                if masks.len() > index {
-                    masks[index]
+                if let Some(index) = maybe_index {
+                    masks.get(index).copied().unwrap_or(DEFAULT_NUMBER_MASK)
                 } else {
                     DEFAULT_NUMBER_MASK
                 }

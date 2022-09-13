@@ -6,6 +6,8 @@ use thiserror::Error;
 
 use crate::util;
 
+use super::{NumberMaskingOption, StringMaskingOption};
+
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("invalid string field name: {0}")]
@@ -14,16 +16,39 @@ pub enum Error {
     NumberField(String),
 }
 
-#[derive(Debug)]
-pub struct BodyMask {
-    string_masks: Option<Regex>,
-    number_masks: Option<Regex>,
+#[derive(Debug, Clone, Default)]
+pub(crate) struct BodyMask {
+    string_masks: Option<BodyMaskInner<StringMaskingOption>>,
+    number_masks: Option<BodyMaskInner<NumberMaskingOption>>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct BodyMaskInner<T> {
+    regex: Regex,
+    fields: HashMap<String, usize>,
+    mask_option: T,
+}
+
+impl<T> BodyMaskInner<T> {
+    fn new(regex: Regex, fields: Vec<String>, mask_option: T) -> Self {
+        let fields = fields
+            .into_iter()
+            .enumerate()
+            .map(|(i, field)| (format!("\"{}\"", field), i))
+            .collect();
+
+        Self {
+            regex,
+            fields,
+            mask_option,
+        }
+    }
 }
 
 impl BodyMask {
     /// Create a new BodyMask struct using string_field_names and number_field_names
     /// The regex will be compiled and stored in the struct so it can be used reused, for repeated calls
-    pub fn try_new(
+    pub(crate) fn try_new(
         string_field_names: HashMap<String, String>,
         number_field_names: HashMap<String, i32>,
     ) -> Result<Self, Error> {
@@ -34,11 +59,14 @@ impl BodyMask {
             );
 
             // build up single regex from string field regexes
-            for (field_name, _replacement_value) in string_field_names {
+            for (field_name, replacement_value) in &string_field_names {
+                fields.push(field_name.clone());
+                masks.push(replacement_value.clone());
+
                 let _ = write!(
                     string_mask_regex,
                     r##"(?:("{}"): *)(".*?[^\\]")(?: *[, \n\r}}]?)|"##,
-                    regex::escape(&field_name)
+                    regex::escape(field_name)
                 );
             }
 
@@ -48,7 +76,11 @@ impl BodyMask {
             let string_masks = Regex::new(&string_mask_regex)
                 .map_err(|_| Error::StringField(string_mask_regex))?;
 
-            Some(string_masks)
+            Some(BodyMaskInner::new(
+                string_masks,
+                fields,
+                StringMaskingOption::from(masks),
+            ))
         } else {
             None
         };
@@ -59,11 +91,14 @@ impl BodyMask {
                 (number_field_names.len() * 44) + (number_field_names.len() * 12),
             );
 
-            for (field_name, _replacement_value) in number_field_names {
+            for (field_name, replacement_value) in &number_field_names {
+                fields.push(field_name.clone());
+                masks.push(replacement_value.clone());
+
                 let _ = write!(
                     number_mask_regex,
                     r##"(?:("{}"): *)(-?[0-9]+\.?[0-9]*)( *[, \n\r}}]?)|"##,
-                    regex::escape(&field_name)
+                    regex::escape(field_name)
                 );
             }
 
@@ -73,7 +108,11 @@ impl BodyMask {
             let number_masks = Regex::new(&number_mask_regex)
                 .map_err(|_| Error::NumberField(number_mask_regex))?;
 
-            Some(number_masks)
+            Some(BodyMaskInner::new(
+                number_masks,
+                fields,
+                NumberMaskingOption::from(masks),
+            ))
         } else {
             None
         };
@@ -87,12 +126,16 @@ impl BodyMask {
     /// Will use the regexes stored in the struct to mask the body
     pub fn mask(&self, body: String) -> String {
         // mask string fields
-        let body = if let Some(string_mask_regex) = self.string_masks.as_ref() {
-            string_mask_regex.replace_all(&body, |caps: &Captures| {
+        let body = if let Some(body_mask) = &self.string_masks {
+            body_mask.regex.replace_all(&body, |caps: &Captures| {
                 if let Some(field) = util::get_first_capture(caps) {
                     format!(
-                        r#"{}: "testmask"{}"#,
+                        r#"{}: "{}"{}"#,
                         field,
+                        body_mask.mask_option.get_string_mask_replacement(
+                            field,
+                            body_mask.fields.get(field).copied()
+                        ),
                         caps[0].chars().last().unwrap()
                     )
                 } else {
@@ -104,8 +147,8 @@ impl BodyMask {
         };
 
         // mask number fields
-        let body = if let Some(number_mask_regex) = self.number_masks.as_ref() {
-            number_mask_regex.replace_all(&body, |caps: &Captures| {
+        let body = if let Some(body_mask) = &self.number_masks {
+            body_mask.regex.replace_all(&body, |caps: &Captures| {
                 if let Some(field) = util::get_first_capture(caps) {
                     format!(
                         r#"{}: -123456789{}"#,
@@ -122,6 +165,8 @@ impl BodyMask {
 
         body.to_string()
     }
+
+    // pub(crate) fn set_string_field_names(&self)
 }
 
 #[cfg(test)]

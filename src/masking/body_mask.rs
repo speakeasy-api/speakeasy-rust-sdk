@@ -124,32 +124,30 @@ impl BodyMask {
                 (string_field_names.len() * 38) + (string_field_names.len() * 24),
             );
 
-            // build up single regex from string field regexes
-            for (field_name, replacement_value) in &string_field_names {
-                fields.push(field_name.clone());
-                masks.push(replacement_value.clone());
+        for (field_name, replacement_value) in &string_field_names {
+            string_fields.push(field_name.clone());
+            string_masks.push(replacement_value.clone());
+        }
 
-                let _ = write!(
-                    string_mask_regex,
-                    r##"(?:("{}"): *)(".*?[^\\]")(?: *[, \n\r}}]?)|"##,
-                    regex::escape(field_name)
-                );
-            }
+        // set string field masks
+        body_mask.set_string_field_masks(
+            string_fields,
+            StringMaskingOption::MultipleMasks(string_masks),
+        )?;
 
-            // drop the last "|"
-            string_mask_regex.pop();
+        let mut number_fields = Vec::with_capacity(number_field_names.len());
+        let mut number_masks = Vec::with_capacity(number_field_names.len());
 
-            let string_masks = Regex::new(&string_mask_regex)
-                .map_err(|_| Error::StringField(string_mask_regex))?;
+        for (field_name, replacement_value) in &number_field_names {
+            number_fields.push(field_name.clone());
+            number_masks.push(replacement_value.clone());
+        }
 
-            Some(BodyMaskInner::new(
-                string_masks,
-                fields,
-                StringMaskingOption::from(masks),
-            ))
-        } else {
-            None
-        };
+        // setup number field masks
+        body_mask.set_number_field_masks(
+            number_fields,
+            NumberMaskingOption::MultipleMasks(number_masks),
+        )?;
 
         let number_masks = if !number_field_names.is_empty() {
             // estimate the size of the final regex string to minimize allocations

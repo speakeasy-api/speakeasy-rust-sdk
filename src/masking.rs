@@ -27,6 +27,7 @@ impl GenericMask {
     }
 }
 
+/// All masking options, see for functions for more details on setting them
 #[derive(Debug, Clone, Default)]
 pub struct Masking {
     query_string_mask: Option<GenericMask>,

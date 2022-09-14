@@ -1,7 +1,7 @@
-use std::ops::Deref;
+use std::{collections::HashMap, ops::Deref};
 
 #[derive(Debug, Clone)]
-pub struct Fields(Vec<String>);
+pub(crate) struct Fields(Vec<String>);
 impl From<Vec<String>> for Fields {
     fn from(fields: Vec<String>) -> Self {
         Self(fields)
@@ -46,12 +46,23 @@ impl Deref for Fields {
     }
 }
 
-impl Fields {
-    fn to_vec(self) -> Vec<String> {
-        self.0
-    }
+#[derive(Debug, Clone)]
+pub(crate) struct FieldsSearchMap(HashMap<String, usize>);
 
-    fn iter(&self) -> impl Iterator<Item = &String> {
-        self.0.iter()
+impl From<Fields> for FieldsSearchMap {
+    fn from(fields: Fields) -> Self {
+        Self(
+            fields
+                .iter()
+                .enumerate()
+                .map(|(i, field)| (format!("\"{}\"", field), i))
+                .collect(),
+        )
+    }
+}
+
+impl FieldsSearchMap {
+    pub(crate) fn get(&self, field: &str) -> Option<usize> {
+        self.0.get(field).copied()
     }
 }

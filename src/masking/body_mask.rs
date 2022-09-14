@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::util;
 
-use super::{Fields, NumberMaskingOption, StringMaskingOption};
+use super::{fields::FieldsSearchMap, Fields, NumberMaskingOption, StringMaskingOption};
 
 /// Errors for creating BodyMasks
 #[derive(Debug, Error)]
@@ -28,22 +28,16 @@ pub(crate) struct BodyMask {
 #[derive(Debug, Clone)]
 pub(crate) struct BodyMaskInner<T> {
     regex: Regex,
-    fields: HashMap<String, usize>,
+    fields: FieldsSearchMap,
     mask_option: T,
 }
 
 // T = StringMaskingOption or NumberMaskingOption
 impl<T> BodyMaskInner<T> {
-    fn new(regex: Regex, fields: Vec<String>, mask_option: T) -> Self {
-        let fields = fields
-            .into_iter()
-            .enumerate()
-            .map(|(i, field)| (format!("\"{}\"", field), i))
-            .collect();
-
+    fn new(regex: Regex, fields: Fields, mask_option: T) -> Self {
         Self {
             regex,
-            fields,
+            fields: fields.into(),
             mask_option,
         }
     }
@@ -76,11 +70,7 @@ impl BodyMask {
             let string_masks = Regex::new(&string_mask_regex)
                 .map_err(|_| Error::StringField(string_mask_regex))?;
 
-            Some(BodyMaskInner::new(
-                string_masks,
-                fields.to_vec(),
-                masks_option,
-            ))
+            Some(BodyMaskInner::new(string_masks, fields, masks_option))
         } else {
             None
         };
@@ -114,7 +104,7 @@ impl BodyMask {
 
             let masks = Regex::new(&mask_regex).map_err(|_| Error::NumberField(mask_regex))?;
 
-            Some(BodyMaskInner::new(masks, fields.to_vec(), masks_option))
+            Some(BodyMaskInner::new(masks, fields, masks_option))
         } else {
             None
         };
@@ -207,7 +197,7 @@ impl BodyMask {
                 if let Some(field) = util::get_first_capture(caps) {
                     let replacement_mask = body_mask
                         .mask_option
-                        .get_mask_replacement(field, body_mask.fields.get(field).copied());
+                        .get_mask_replacement(field, body_mask.fields.get(field));
 
                     format!(
                         r#"{}: "{}"{}"#,
@@ -229,7 +219,7 @@ impl BodyMask {
                 if let Some(field) = util::get_first_capture(caps) {
                     let replacement_mask = body_mask
                         .mask_option
-                        .get_mask_replacement(field, body_mask.fields.get(field).copied());
+                        .get_mask_replacement(field, body_mask.fields.get(field));
 
                     format!(
                         r#"{}: {}{}"#,

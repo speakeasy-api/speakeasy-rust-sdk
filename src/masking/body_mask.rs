@@ -120,11 +120,10 @@ impl BodyMask {
         string_field_names: HashMap<String, String>,
         number_field_names: HashMap<String, i32>,
     ) -> Result<Self, Error> {
-        let string_masks = if !string_field_names.is_empty() {
-            // estimate the size of the final regex string to minimize allocations
-            let mut string_mask_regex = String::with_capacity(
-                (string_field_names.len() * 38) + (string_field_names.len() * 24),
-            );
+        let mut body_mask = BodyMask::default();
+
+        let mut string_fields = Vec::with_capacity(string_field_names.len());
+        let mut string_masks = Vec::with_capacity(string_field_names.len());
 
         for (field_name, replacement_value) in &string_field_names {
             string_fields.push(field_name.clone());
@@ -142,7 +141,7 @@ impl BodyMask {
 
         for (field_name, replacement_value) in &number_field_names {
             number_fields.push(field_name.clone());
-            number_masks.push(replacement_value.clone());
+            number_masks.push(*replacement_value);
         }
 
         // setup number field masks
@@ -151,42 +150,7 @@ impl BodyMask {
             NumberMaskingOption::MultipleMasks(number_masks),
         )?;
 
-        let number_masks = if !number_field_names.is_empty() {
-            // estimate the size of the final regex string to minimize allocations
-            let mut number_mask_regex = String::with_capacity(
-                (number_field_names.len() * 44) + (number_field_names.len() * 12),
-            );
-
-            for (field_name, replacement_value) in &number_field_names {
-                fields.push(field_name.clone());
-                masks.push(replacement_value.clone());
-
-                let _ = write!(
-                    number_mask_regex,
-                    r##"(?:("{}"): *)(-?[0-9]+\.?[0-9]*)( *[, \n\r}}]?)|"##,
-                    regex::escape(field_name)
-                );
-            }
-
-            // drop the last "|"
-            number_mask_regex.pop();
-
-            let number_masks = Regex::new(&number_mask_regex)
-                .map_err(|_| Error::NumberField(number_mask_regex))?;
-
-            Some(BodyMaskInner::new(
-                number_masks,
-                fields,
-                NumberMaskingOption::from(masks),
-            ))
-        } else {
-            None
-        };
-
-        Ok(Self {
-            string_masks,
-            number_masks,
-        })
+        Ok(body_mask)
     }
 
     /// Will use the regexes stored in the struct to mask the body

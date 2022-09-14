@@ -2,14 +2,14 @@ use chrono::{DateTime, Utc};
 use har::{
     v1_2::{
         Cache, Cookies as HarCookie, Creator, Entries as HarEntry, Headers as HarHeader, Log,
-        Request as HarRequest, Response as HarResponse, Timings,
+        QueryString, Request as HarRequest, Response as HarResponse, Timings,
     },
     Har,
 };
 
 use crate::{
     generic_http::{GenericRequest, GenericResponse},
-    masking::generic_mask::{GenericMask, RequestCookieMask, RequestHeaderMask},
+    masking::generic_mask::{GenericMask, QueryStringMask, RequestCookieMask, RequestHeaderMask},
     Masking,
 };
 
@@ -73,8 +73,8 @@ impl HarBuilder {
             http_version: format!("{:?}", self.request.http_version),
             cookies: self.build_request_cookies(&masking.request_cookie_mask),
             headers: self.build_request_headers(&masking.request_header_mask),
-            query_string: todo!(),
-            headers_size: todo!(),
+            query_string: self.build_query_string(&masking.query_string_mask),
+            headers_size: self.build_request_headers_size(),
             body_size: todo!(),
             post_data: todo!(),
             ..Default::default()
@@ -103,5 +103,16 @@ impl HarBuilder {
                 comment: None,
             })
             .collect()
+    }
+
+    fn build_query_string(
+        &self,
+        query_string_mask: &GenericMask<QueryStringMask>,
+    ) -> Vec<QueryString> {
+        todo!()
+    }
+
+    fn build_request_headers_size(&self) -> i64 {
+        todo!()
     }
 }

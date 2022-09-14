@@ -66,3 +66,24 @@ impl FieldsSearchMap {
         self.0.get(field).copied()
     }
 }
+
+#[derive(Debug, Clone)]
+pub(crate) struct GenericMaskFieldsSearchMap(HashMap<String, usize>);
+
+impl From<Fields> for GenericMaskFieldsSearchMap {
+    fn from(fields: Fields) -> Self {
+        Self(
+            fields
+                .iter()
+                .enumerate()
+                .map(|(i, field)| (field.clone(), i))
+                .collect(),
+        )
+    }
+}
+
+impl GenericMaskFieldsSearchMap {
+    pub(crate) fn get(&self, field: &str) -> Option<usize> {
+        self.0.get(field).copied()
+    }
+}

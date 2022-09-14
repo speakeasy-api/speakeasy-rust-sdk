@@ -7,36 +7,77 @@ pub type NumberMaskingOption = option::NumberMaskingOption;
 
 pub(crate) type Fields = fields::Fields;
 
-use self::{body_mask::BodyMask, fields::FieldsSearchMap};
+use std::{borrow::Cow, marker::PhantomData};
+
+use self::{
+    body_mask::{BodyMask, RequestMask, ResponseMask},
+    fields::FieldsSearchMap,
+};
 
 pub(crate) const DEFAULT_STRING_MASK: &str = "__masked__";
 pub(crate) const DEFAULT_NUMBER_MASK: i32 = -12321;
 
-#[derive(Debug, Clone)]
-pub(crate) struct GenericMask {
-    fields: FieldsSearchMap,
-    mask_option: StringMaskingOption,
-}
+#[derive(Debug, Clone, Default)]
+pub(crate) struct GenericMask<T>(Option<GenericMaskInner<T>>);
 
-impl GenericMask {
+impl<T> GenericMask<T> {
     pub(crate) fn new(fields: Fields, mask_option: StringMaskingOption) -> Self {
-        Self {
-            fields: fields.into(),
-            mask_option,
+        let inner = GenericMaskInner::new(fields, mask_option);
+        Self(Some(inner))
+    }
+
+    pub(crate) fn mask<'a>(&'a self, field: &str, value: &'a str) -> Cow<'a, str> {
+        match &self.0 {
+            Some(inner) => inner.apply(field, value),
+            None => Cow::Borrowed(value),
         }
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct GenericMaskInner<T> {
+    phantom: PhantomData<T>,
+    fields: FieldsSearchMap,
+    mask_option: StringMaskingOption,
+}
+
+impl<T> GenericMaskInner<T> {
+    pub fn new(fields: Fields, mask_option: StringMaskingOption) -> Self {
+        Self {
+            phantom: PhantomData,
+            fields: fields.into(),
+            mask_option,
+        }
+    }
+
+    fn apply(&self, field: &str, value: &str) -> Cow<str> {
+        self.mask_option
+            .get_mask_replacement(field, self.fields.get(field))
+            .into()
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct QueryStringMask;
+#[derive(Debug, Clone, Default)]
+pub struct RequestHeaderMask;
+#[derive(Debug, Clone, Default)]
+pub struct ResponseHeaderMask;
+#[derive(Debug, Clone, Default)]
+pub struct RequestCookieMask;
+#[derive(Debug, Clone, Default)]
+pub struct ResponseCookieMask;
+
 /// All masking options, see for functions for more details on setting them
 #[derive(Debug, Clone, Default)]
 pub struct Masking {
-    query_string_mask: Option<GenericMask>,
-    request_header_mask: Option<GenericMask>,
-    response_header_mask: Option<GenericMask>,
-    request_cookie_mask: Option<GenericMask>,
-    response_cookie_mask: Option<GenericMask>,
-    response_masks: BodyMask,
-    request_masks: BodyMask,
+    pub(crate) query_string_mask: GenericMask<QueryStringMask>,
+    pub(crate) request_header_mask: GenericMask<RequestHeaderMask>,
+    pub(crate) response_header_mask: GenericMask<ResponseHeaderMask>,
+    pub(crate) request_cookie_mask: GenericMask<RequestCookieMask>,
+    pub(crate) response_cookie_mask: GenericMask<ResponseCookieMask>,
+    pub(crate) response_masks: BodyMask<RequestMask>,
+    pub(crate) request_masks: BodyMask<ResponseMask>,
 }
 
 impl Masking {
@@ -93,7 +134,7 @@ impl Masking {
         fields: impl Into<Fields>,
         masking_option: impl Into<StringMaskingOption>,
     ) {
-        self.query_string_mask = Some(GenericMask::new(fields.into(), masking_option.into()));
+        self.query_string_mask = GenericMask::new(fields.into(), masking_option.into());
     }
 
     /// with_request_header_mask will mask the specified request headers with an optional mask string.
@@ -149,7 +190,7 @@ impl Masking {
         fields: impl Into<Fields>,
         masking_option: impl Into<StringMaskingOption>,
     ) {
-        self.request_header_mask = Some(GenericMask::new(fields.into(), masking_option.into()));
+        self.request_header_mask = GenericMask::new(fields.into(), masking_option.into());
     }
 
     /// with_response_cookie_mask will mask the specified response cookies with an optional mask string.
@@ -205,7 +246,7 @@ impl Masking {
         fields: impl Into<Fields>,
         masking_option: impl Into<StringMaskingOption>,
     ) {
-        self.response_cookie_mask = Some(GenericMask::new(fields.into(), masking_option.into()));
+        self.response_cookie_mask = GenericMask::new(fields.into(), masking_option.into());
     }
 
     /// with_response_header_mask will mask the specified response headers with an optional mask string.
@@ -261,7 +302,7 @@ impl Masking {
         fields: impl Into<Fields>,
         masking_option: impl Into<StringMaskingOption>,
     ) {
-        self.response_header_mask = Some(GenericMask::new(fields.into(), masking_option.into()));
+        self.response_header_mask = GenericMask::new(fields.into(), masking_option.into());
     }
 
     /// with_request_cookie_mask will mask the specified request cookies with an optional mask string.
@@ -317,7 +358,7 @@ impl Masking {
         fields: impl Into<Fields>,
         masking_option: impl Into<StringMaskingOption>,
     ) {
-        self.request_cookie_mask = Some(GenericMask::new(fields.into(), masking_option.into()));
+        self.request_cookie_mask = GenericMask::new(fields.into(), masking_option.into());
     }
 
     /// with_request_field_mask_string will mask the specified request body fields with an optional mask.

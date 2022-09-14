@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap};
+use std::{borrow::Cow, collections::HashMap, marker::PhantomData};
 
 use regex::{Captures, Regex};
 use std::fmt::Write as _;
@@ -17,9 +17,16 @@ pub enum Error {
     NumberField(String),
 }
 
+#[derive(Debug, Clone, Default)]
+pub(crate) struct RequestMask;
+
+#[derive(Debug, Clone, Default)]
+pub(crate) struct ResponseMask;
+
 /// BodyMasks holds information needed to perform masking on a request or response body
 #[derive(Debug, Clone, Default)]
-pub(crate) struct BodyMask {
+pub(crate) struct BodyMask<T> {
+    phantom: PhantomData<T>,
     string_masks: Option<BodyMaskInner<StringMaskingOption>>,
     number_masks: Option<BodyMaskInner<NumberMaskingOption>>,
 }
@@ -43,7 +50,7 @@ impl<T> BodyMaskInner<T> {
     }
 }
 
-impl BodyMask {
+impl<T: Default> BodyMask<T> {
     /// Creates a BodyMask from a list of string fields to mask
     /// errors if there is a probably creating the Regex
     pub(crate) fn set_string_field_masks(

@@ -1,8 +1,8 @@
 use chrono::{DateTime, Utc};
 use har::{
     v1_2::{
-        Cache, Creator, Entries, Headers, Log, Request as HarRequest, Response as HarResponse,
-        Timings,
+        Cache, Cookies as HarCookie, Creator, Entries as HarEntry, Headers as HarHeader, Log,
+        Request as HarRequest, Response as HarResponse, Timings,
     },
     Har,
 };
@@ -10,7 +10,7 @@ use http::HeaderMap;
 
 use crate::{
     generic_http::{GenericRequest, GenericResponse},
-    masking::{GenericMask, RequestHeaderMask},
+    masking::{GenericMask, RequestCookieMask, RequestHeaderMask},
     Masking,
 };
 
@@ -42,14 +42,14 @@ impl HarBuilder {
                     version: env!("CARGO_PKG_VERSION").to_string(),
                     ..Default::default()
                 },
-                comment: todo!(),
-                entries: vec![Entries {
+                comment: Some(format!("request capture for {}", &self.request.full_url)),
+                entries: vec![HarEntry {
                     started_date_time: start_time.to_rfc3339(),
                     time: Utc::now()
                         .signed_duration_since(start_time)
                         .num_milliseconds()
                         .abs() as f64,
-                    request: todo!(),
+                    request: self.build_request(masking),
                     response: todo!(),
                     cache: Cache::default(),
                     timings: Timings {
@@ -72,7 +72,7 @@ impl HarBuilder {
             method: self.request.method.clone(),
             url: self.request.full_url.clone(),
             http_version: format!("{:?}", self.request.http_version),
-            cookies: todo!(),
+            cookies: self.build_request_cookies(&masking.request_cookie_mask),
             headers: self.build_request_headers(&masking.request_header_mask),
             query_string: todo!(),
             headers_size: todo!(),
@@ -82,15 +82,25 @@ impl HarBuilder {
         }
     }
 
-    fn build_request_headers(&self, masker: &GenericMask<RequestHeaderMask>) -> Vec<Headers> {
+    fn build_request_cookies(&self, masker: &GenericMask<RequestCookieMask>) -> Vec<HarCookie> {
+        self.request
+            .cookies
+            .iter()
+            .map(|cookie| HarCookie {
+                name: cookie.name.clone(),
+                value: masker.mask(&cookie.name, &cookie.value),
+                ..Default::default()
+            })
+            .collect()
+    }
+
+    fn build_request_headers(&self, masker: &GenericMask<RequestHeaderMask>) -> Vec<HarHeader> {
         self.request
             .headers
             .iter()
-            .map(|(name, value)| Headers {
+            .map(|(name, value)| HarHeader {
                 name: name.to_string(),
-                value: masker
-                    .mask(name.as_str(), value.to_str().unwrap_or(""))
-                    .to_string(),
+                value: masker.mask(name.as_str(), value.to_str().unwrap_or("")),
                 comment: None,
             })
             .collect()

@@ -26,10 +26,10 @@ impl<T> GenericMask<T> {
         Self(Some(inner))
     }
 
-    pub(crate) fn mask<'a>(&'a self, field: &str, value: &'a str) -> Cow<'a, str> {
+    pub(crate) fn mask(&self, field: &str, value: &str) -> String {
         match &self.0 {
-            Some(inner) => inner.apply(field, value),
-            None => Cow::Borrowed(value),
+            Some(inner) => inner.mask(field, value).to_string(),
+            None => value.to_string(),
         }
     }
 }
@@ -50,10 +50,9 @@ impl<T> GenericMaskInner<T> {
         }
     }
 
-    fn apply(&self, field: &str, value: &str) -> Cow<str> {
+    fn mask(&self, field: &str, value: &str) -> &str {
         self.mask_option
             .get_mask_replacement(field, self.fields.get(field))
-            .into()
     }
 }
 

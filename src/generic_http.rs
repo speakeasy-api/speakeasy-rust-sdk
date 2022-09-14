@@ -1,5 +1,11 @@
 use http::{version::Version, HeaderMap};
 
+#[derive(Debug, Clone)]
+pub(crate) struct GenericCookie {
+    pub(crate) name: String,
+    pub(crate) value: String,
+}
+
 /// A generic HTTP request, which can be converted to a HAR request
 /// A generic HTTP request, can be created from a request from a web framework
 #[derive(Debug, Clone)]
@@ -12,6 +18,7 @@ pub(crate) struct GenericRequest {
     pub(crate) protocol: Option<String>,
     pub(crate) http_version: Version,
     pub(crate) headers: HeaderMap,
+    pub(crate) cookies: Vec<GenericCookie>,
     pub(crate) port: Option<i32>,
 }
 

@@ -7,18 +7,90 @@ pub type NumberMaskingOption = option::NumberMaskingOption;
 
 pub(crate) type Fields = fields::Fields;
 
-use self::body_mask::BodyMask;
+use self::{body_mask::BodyMask, fields::FieldsSearchMap};
 
 pub(crate) const DEFAULT_STRING_MASK: &str = "__masked__";
 pub(crate) const DEFAULT_NUMBER_MASK: i32 = -12321;
 
+#[derive(Debug, Clone)]
+pub(crate) struct GenericMask {
+    fields: FieldsSearchMap,
+    mask_option: StringMaskingOption,
+}
+
+impl GenericMask {
+    pub(crate) fn new(fields: Fields, mask_option: StringMaskingOption) -> Self {
+        Self {
+            fields: fields.into(),
+            mask_option,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct Masking {
+    query_string_mask: Option<GenericMask>,
     response_masks: BodyMask,
     request_masks: BodyMask,
 }
 
 impl Masking {
+    /// with_query_string_mask will mask the specified query strings with an optional mask string.
+    /// If no mask is provided, the value will be masked with the default mask.
+    /// If a single mask is provided, it will be used for all query strings.
+    /// If the number of masks provided is equal to the number of query strings, masks will be used in order.
+    /// Otherwise, the masks will be used in order until it they are exhausted. If the masks are exhausted, the default mask will be used.
+    /// (defaults to "__masked__").
+    /// # Examples
+    /// ```rust
+    /// use std::collections::HashMap;
+    /// use speakeasy_rust_sdk::{Masking, StringMaskingOption};
+    ///
+    /// // Mask a single field with the default mask
+    /// let mut masking = Masking::default();
+    /// masking.with_query_string_mask("password", StringMaskingOption::default());
+    ///
+    /// // Mask a single field with the default mask just using None
+    /// let mut masking = Masking::default();
+    /// masking.with_query_string_mask("password", None);
+    ///
+    /// // Mask a single field with a custom mask
+    /// let mut masking = Masking::default();
+    /// masking.with_query_string_mask("password", "************");
+    ///
+    /// // Mask multiple fields with a multiple masks
+    /// let mut masking = Masking::default();
+    /// masking.with_query_string_mask(
+    ///     ["authorization", "password", "more_secrets"].as_slice(),
+    ///     ["__masked__", "*****", "no_secrets_for_you"].as_slice(),
+    /// );
+    ///
+    /// // Mask multiple fields with a multiple masks
+    /// let mut masking = Masking::default();
+    /// masking.with_query_string_mask(
+    ///     vec!["authorization", "password", "more_secrets"],
+    ///     vec!["__my_mask__", "*****"],
+    /// );
+    ///
+    /// // Mask multiple fields with multiple associated masks
+    /// let mut customs_masks = HashMap::new();
+    /// customs_masks.insert("authorization", "*****");
+    /// customs_masks.insert("password", "hunter2");
+    /// customs_masks.insert("more_secrets", "__my_mask__");
+    ///
+    /// let mut masking = Masking::default();
+    /// masking.with_query_string_mask(
+    ///     vec!["authorization", "password", "more_secrets"],
+    ///     customs_masks,
+    /// );
+    pub fn with_query_string_mask(
+        &mut self,
+        fields: impl Into<Fields>,
+        masking_option: impl Into<StringMaskingOption>,
+    ) {
+        self.query_string_mask = Some(GenericMask::new(fields.into(), masking_option.into()));
+    }
+
     /// with_request_field_mask_string will mask the specified request body fields with an optional mask.
     /// Supports string fields only. Matches using regex.
     /// If no mask is provided, the value will be masked with the default mask.
@@ -47,15 +119,15 @@ impl Masking {
     /// // Mask multiple fields with a multiple masks
     /// let mut masking = Masking::default();
     /// masking.with_request_field_mask_string(
-    /// ["authorization", "password", "more_secrets"].as_slice(),
-    /// ["__masked__", "*****", "no_secrets_for_you"].as_slice(),
+    ///     ["authorization", "password", "more_secrets"].as_slice(),
+    ///     ["__masked__", "*****", "no_secrets_for_you"].as_slice(),
     /// );
     ///
     /// // Mask multiple fields with a multiple masks
     /// let mut masking = Masking::default();
     /// masking.with_request_field_mask_string(
-    /// vec!["authorization", "password", "more_secrets"],
-    /// vec!["__my_mask__", "*****"],
+    ///     vec!["authorization", "password", "more_secrets"],
+    ///     vec!["__my_mask__", "*****"],
     /// );
     ///
     /// // Mask multiple fields with multiple associated masks
@@ -66,8 +138,8 @@ impl Masking {
     ///
     /// let mut masking = Masking::default();
     /// masking.with_request_field_mask_string(
-    /// vec!["authorization", "password", "more_secrets"],
-    /// customs_masks
+    ///     vec!["authorization", "password", "more_secrets"],
+    ///     customs_masks
     /// );
     /// ```
     pub fn with_request_field_mask_string(
@@ -113,15 +185,15 @@ impl Masking {
     /// // Mask multiple fields with a multiple masks
     /// let mut masking = Masking::default();
     /// masking.with_request_field_mask_number(
-    /// ["authorization", "password", "more_secrets"].as_slice(),
-    /// [-1, -2, -3].as_slice(),
+    ///     ["authorization", "password", "more_secrets"].as_slice(),
+    ///     [-1, -2, -3].as_slice(),
     /// );
     ///
     /// // Mask multiple fields with a multiple masks
     /// let mut masking = Masking::default();
     /// masking.with_request_field_mask_number(
-    /// vec!["authorization", "password", "more_secrets"],
-    /// vec![-111111, -222222],
+    ///     vec!["authorization", "password", "more_secrets"],
+    ///     vec![-111111, -222222],
     /// );
     ///
     /// // Mask multiple fields with multiple associated masks
@@ -132,8 +204,8 @@ impl Masking {
     ///
     /// let mut masking = Masking::default();
     /// masking.with_request_field_mask_number(
-    /// vec!["authorization", "password", "more_secrets"],
-    /// customs_masks
+    ///     vec!["authorization", "password", "more_secrets"],
+    ///     customs_masks
     /// );
     /// ```
     pub fn with_request_field_mask_number(
@@ -179,15 +251,15 @@ impl Masking {
     ///  // Mask multiple fields with a multiple masks
     ///  let mut masking = Masking::default();
     ///  masking.with_response_field_mask_string(
-    ///  ["authorization", "password", "more_secrets"].as_slice(),
-    ///  ["__masked__", "*****", "no_secrets_for_you"].as_slice(),
+    ///     ["authorization", "password", "more_secrets"].as_slice(),
+    ///     ["__masked__", "*****", "no_secrets_for_you"].as_slice(),
     ///  );
     ///
     ///  // Mask multiple fields with a multiple masks
     ///  let mut masking = Masking::default();
     ///  masking.with_response_field_mask_string(
-    ///  vec!["authorization", "password", "more_secrets"],
-    ///  vec!["__my_mask__", "*****"],
+    ///     vec!["authorization", "password", "more_secrets"],
+    ///     vec!["__my_mask__", "*****"],
     ///  );
     ///
     ///  // Mask multiple fields with multiple associated masks
@@ -198,8 +270,8 @@ impl Masking {
     ///
     ///  let mut masking = Masking::default();
     ///  masking.with_response_field_mask_string(
-    ///  vec!["authorization", "password", "more_secrets"],
-    ///  customs_masks
+    ///     vec!["authorization", "password", "more_secrets"],
+    ///     customs_masks
     ///  );
     ///  ```
     pub fn with_response_field_mask_string(
@@ -245,15 +317,15 @@ impl Masking {
     /// // Mask multiple fields with a multiple masks
     /// let mut masking = Masking::default();
     /// masking.with_response_field_mask_number(
-    /// ["authorization", "password", "more_secrets"].as_slice(),
-    /// [-1, -2, -3].as_slice(),
+    ///     ["authorization", "password", "more_secrets"].as_slice(),
+    ///     [-1, -2, -3].as_slice(),
     /// );
     ///
     /// // Mask multiple fields with a multiple masks
     /// let mut masking = Masking::default();
     /// masking.with_response_field_mask_number(
-    /// vec!["authorization", "password", "more_secrets"],
-    /// vec![-111111, -222222],
+    ///     vec!["authorization", "password", "more_secrets"],
+    ///     vec![-111111, -222222],
     /// );
     ///
     /// // Mask multiple fields with multiple associated masks
@@ -264,8 +336,8 @@ impl Masking {
     ///
     /// let mut masking = Masking::default();
     /// masking.with_response_field_mask_number(
-    /// vec!["authorization", "password", "more_secrets"],
-    /// customs_masks
+    ///     vec!["authorization", "password", "more_secrets"],
+    ///     customs_masks
     /// );
     /// ```
     pub fn with_response_field_mask_number(

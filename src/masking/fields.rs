@@ -1,7 +1,7 @@
 use std::{collections::HashMap, ops::Deref};
 
 #[derive(Debug, Clone)]
-pub(crate) struct Fields(Vec<String>);
+pub struct Fields(Vec<String>);
 impl From<Vec<String>> for Fields {
     fn from(fields: Vec<String>) -> Self {
         Self(fields)

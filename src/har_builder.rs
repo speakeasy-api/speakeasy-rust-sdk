@@ -6,11 +6,10 @@ use har::{
     },
     Har,
 };
-use http::HeaderMap;
 
 use crate::{
     generic_http::{GenericRequest, GenericResponse},
-    masking::{GenericMask, RequestCookieMask, RequestHeaderMask},
+    masking::generic_mask::{GenericMask, RequestCookieMask, RequestHeaderMask},
     Masking,
 };
 

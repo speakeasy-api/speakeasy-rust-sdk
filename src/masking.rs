@@ -2,79 +2,29 @@ mod body_mask;
 mod fields;
 mod option;
 
+pub(crate) mod generic_mask;
+
 pub type StringMaskingOption = option::StringMaskingOption;
 pub type NumberMaskingOption = option::NumberMaskingOption;
 
 pub(crate) type Fields = fields::Fields;
 
-use std::{borrow::Cow, marker::PhantomData};
-
 use self::{
     body_mask::{BodyMask, RequestMask, ResponseMask},
-    fields::FieldsSearchMap,
+    generic_mask::{GenericMask, QueryStringMask, RequestCookieMask, RequestHeaderMask},
 };
 
 pub(crate) const DEFAULT_STRING_MASK: &str = "__masked__";
 pub(crate) const DEFAULT_NUMBER_MASK: i32 = -12321;
-
-#[derive(Debug, Clone, Default)]
-pub(crate) struct GenericMask<T>(Option<GenericMaskInner<T>>);
-
-impl<T> GenericMask<T> {
-    pub(crate) fn new(fields: Fields, mask_option: StringMaskingOption) -> Self {
-        let inner = GenericMaskInner::new(fields, mask_option);
-        Self(Some(inner))
-    }
-
-    pub(crate) fn mask(&self, field: &str, value: &str) -> String {
-        match &self.0 {
-            Some(inner) => inner.mask(field, value).to_string(),
-            None => value.to_string(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct GenericMaskInner<T> {
-    phantom: PhantomData<T>,
-    fields: FieldsSearchMap,
-    mask_option: StringMaskingOption,
-}
-
-impl<T> GenericMaskInner<T> {
-    pub fn new(fields: Fields, mask_option: StringMaskingOption) -> Self {
-        Self {
-            phantom: PhantomData,
-            fields: fields.into(),
-            mask_option,
-        }
-    }
-
-    fn mask(&self, field: &str, value: &str) -> &str {
-        self.mask_option
-            .get_mask_replacement(field, self.fields.get(field))
-    }
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct QueryStringMask;
-#[derive(Debug, Clone, Default)]
-pub struct RequestHeaderMask;
-#[derive(Debug, Clone, Default)]
-pub struct ResponseHeaderMask;
-#[derive(Debug, Clone, Default)]
-pub struct RequestCookieMask;
-#[derive(Debug, Clone, Default)]
-pub struct ResponseCookieMask;
 
 /// All masking options, see for functions for more details on setting them
 #[derive(Debug, Clone, Default)]
 pub struct Masking {
     pub(crate) query_string_mask: GenericMask<QueryStringMask>,
     pub(crate) request_header_mask: GenericMask<RequestHeaderMask>,
-    pub(crate) response_header_mask: GenericMask<ResponseHeaderMask>,
+    pub(crate) response_header_mask: GenericMask<ResponseMask>,
     pub(crate) request_cookie_mask: GenericMask<RequestCookieMask>,
-    pub(crate) response_cookie_mask: GenericMask<ResponseCookieMask>,
+    pub(crate) response_cookie_mask: GenericMask<ResponseMask>,
     pub(crate) response_masks: BodyMask<RequestMask>,
     pub(crate) request_masks: BodyMask<ResponseMask>,
 }

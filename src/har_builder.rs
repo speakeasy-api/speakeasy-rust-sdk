@@ -2,13 +2,14 @@ use chrono::{DateTime, Utc};
 use har::{
     v1_2::{
         Cache, Cookies as HarCookie, Creator, Entries as HarEntry, Headers as HarHeader, Log,
-        QueryString, Request as HarRequest, Response as HarResponse, Timings,
+        PostData, QueryString, Request as HarRequest, Response as HarResponse, Timings,
     },
     Har,
 };
 
 use crate::{
-    generic_http::{GenericRequest, GenericResponse},
+    generic_http::{BodyCapture, GenericRequest, GenericResponse, DROPPED_TEXT},
+    masking::body_mask::{BodyMask, ResponseMask},
     masking::generic_mask::{GenericMask, QueryStringMask, RequestCookieMask, RequestHeaderMask},
     Masking,
 };
@@ -75,8 +76,13 @@ impl HarBuilder {
             headers: self.build_request_headers(&masking.request_header_mask),
             query_string: self.build_query_string(&masking.query_string_mask),
             headers_size: self.build_request_headers_size(),
-            body_size: todo!(),
-            post_data: todo!(),
+            body_size: self
+                .request
+                .headers
+                .get(http::header::CONTENT_LENGTH)
+                .map(|v| v.to_str().unwrap().parse::<i64>().unwrap_or(-1))
+                .unwrap_or(-1),
+            post_data: self.build_body_post_data(&masking.request_masks),
             ..Default::default()
         }
     }
@@ -124,5 +130,51 @@ impl HarBuilder {
 
     fn build_request_headers_size(&self) -> i64 {
         format!("{:?}", &self.request.headers).len() as i64
+    }
+
+    fn build_body_post_data(&self, masker: &BodyMask<ResponseMask>) -> Option<PostData> {
+        if self.request.body == BodyCapture::Empty {
+            return None;
+        }
+
+        match self.request.body {
+            BodyCapture::Empty => None,
+            BodyCapture::Captured(ref text) => {
+                let content_type = self
+                    .request
+                    .headers
+                    .get(http::header::CONTENT_TYPE)
+                    .map(|value| value.to_str().unwrap_or(""))
+                    .unwrap_or("");
+
+                let body_str = String::from_utf8_lossy(text);
+
+                let body_string = if content_type == "application/json" {
+                    masker.mask(&body_str)
+                } else {
+                    body_str.to_string()
+                };
+
+                Some(PostData {
+                    mime_type: content_type.to_string(),
+                    text: Some(body_string),
+                    ..Default::default()
+                })
+            }
+            BodyCapture::Dropped => {
+                let content_type = self
+                    .request
+                    .headers
+                    .get(http::header::CONTENT_TYPE)
+                    .map(|value| value.to_str().unwrap_or("application/octet-stream"))
+                    .unwrap_or("application/octet-stream");
+
+                Some(PostData {
+                    mime_type: content_type.to_string(),
+                    text: Some(DROPPED_TEXT.to_string()),
+                    ..Default::default()
+                })
+            }
+        }
     }
 }

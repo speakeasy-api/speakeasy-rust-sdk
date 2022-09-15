@@ -1,7 +1,7 @@
-mod body_mask;
 mod fields;
 mod option;
 
+pub(crate) mod body_mask;
 pub(crate) mod generic_mask;
 
 pub type StringMaskingOption = option::StringMaskingOption;

@@ -161,10 +161,10 @@ impl<T: Default> BodyMask<T> {
     }
 
     /// Will use the regexes stored in the struct to mask the body
-    pub fn mask(&self, body: String) -> String {
+    pub fn mask(&self, body: &str) -> String {
         // mask string fields
         let body = if let Some(body_mask) = &self.string_masks {
-            body_mask.regex.replace_all(&body, |caps: &Captures| {
+            body_mask.regex.replace_all(body, |caps: &Captures| {
                 if let Some(field) = util::get_first_capture(caps) {
                     let replacement_mask = body_mask
                         .mask_option
@@ -181,7 +181,7 @@ impl<T: Default> BodyMask<T> {
                 }
             })
         } else {
-            Cow::Owned(body)
+            Cow::Borrowed(body)
         };
 
         // mask number fields

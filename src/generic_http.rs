@@ -36,4 +36,11 @@ pub(crate) struct GenericRequest {
 /// A generic HTTP response, which can be converted to a HAR response
 /// A generic HTTP response, can be created from a response from a web framework
 #[derive(Debug, Clone)]
-pub(crate) struct GenericResponse {}
+pub(crate) struct GenericResponse {
+    pub(crate) method: String,
+    pub(crate) status: http::StatusCode,
+    pub(crate) http_version: Version,
+    pub(crate) headers: HeaderMap,
+    pub(crate) cookies: Vec<GenericCookie>,
+    pub(crate) body: BodyCapture,
+}

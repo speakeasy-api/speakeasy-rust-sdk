@@ -11,7 +11,10 @@ pub(crate) type Fields = fields::Fields;
 
 use self::{
     body_mask::{BodyMask, RequestMask, ResponseMask},
-    generic_mask::{GenericMask, QueryStringMask, RequestCookieMask, RequestHeaderMask},
+    generic_mask::{
+        GenericMask, QueryStringMask, RequestCookieMask, RequestHeaderMask, ResponseCookieMask,
+        ResponseHeaderMask,
+    },
 };
 
 pub(crate) const DEFAULT_STRING_MASK: &str = "__masked__";
@@ -22,11 +25,11 @@ pub(crate) const DEFAULT_NUMBER_MASK: i32 = -12321;
 pub struct Masking {
     pub(crate) query_string_mask: GenericMask<QueryStringMask>,
     pub(crate) request_header_mask: GenericMask<RequestHeaderMask>,
-    pub(crate) response_header_mask: GenericMask<ResponseMask>,
+    pub(crate) response_header_mask: GenericMask<ResponseHeaderMask>,
     pub(crate) request_cookie_mask: GenericMask<RequestCookieMask>,
-    pub(crate) response_cookie_mask: GenericMask<ResponseMask>,
-    pub(crate) response_masks: BodyMask<RequestMask>,
-    pub(crate) request_masks: BodyMask<ResponseMask>,
+    pub(crate) response_cookie_mask: GenericMask<ResponseCookieMask>,
+    pub(crate) request_masks: BodyMask<RequestMask>,
+    pub(crate) response_masks: BodyMask<ResponseMask>,
 }
 
 impl Masking {

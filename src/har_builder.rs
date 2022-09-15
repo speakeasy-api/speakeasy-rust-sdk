@@ -1,16 +1,23 @@
 use chrono::{DateTime, Utc};
 use har::{
     v1_2::{
-        Cache, Cookies as HarCookie, Creator, Entries as HarEntry, Headers as HarHeader, Log,
-        PostData, QueryString, Request as HarRequest, Response as HarResponse, Timings,
+        Cache, Content, Cookies as HarCookie, Creator, Entries as HarEntry, Headers as HarHeader,
+        Log, PostData, QueryString, Request as HarRequest, Response as HarResponse, Timings,
     },
     Har,
 };
+use http::StatusCode;
 
 use crate::{
     generic_http::{BodyCapture, GenericRequest, GenericResponse, DROPPED_TEXT},
-    masking::body_mask::{BodyMask, ResponseMask},
-    masking::generic_mask::{GenericMask, QueryStringMask, RequestCookieMask, RequestHeaderMask},
+    masking::{
+        body_mask::RequestMask,
+        generic_mask::{GenericMask, QueryStringMask, RequestCookieMask, RequestHeaderMask},
+    },
+    masking::{
+        body_mask::{BodyMask, ResponseMask},
+        generic_mask::{ResponseCookieMask, ResponseHeaderMask},
+    },
     Masking,
 };
 
@@ -50,7 +57,7 @@ impl HarBuilder {
                         .num_milliseconds()
                         .abs() as f64,
                     request: self.build_request(masking),
-                    response: todo!(),
+                    response: self.build_response(masking),
                     cache: Cache::default(),
                     timings: Timings {
                         send: -1.0,
@@ -75,15 +82,35 @@ impl HarBuilder {
             cookies: self.build_request_cookies(&masking.request_cookie_mask),
             headers: self.build_request_headers(&masking.request_header_mask),
             query_string: self.build_query_string(&masking.query_string_mask),
-            headers_size: self.build_request_headers_size(),
+            headers_size: format!("{:?}", &self.request.headers).len() as i64,
             body_size: self
                 .request
                 .headers
                 .get(http::header::CONTENT_LENGTH)
-                .map(|v| v.to_str().unwrap().parse::<i64>().unwrap_or(-1))
+                .and_then(|v| v.to_str().unwrap().parse::<i64>().ok())
                 .unwrap_or(-1),
             post_data: self.build_body_post_data(&masking.request_masks),
-            ..Default::default()
+            comment: None,
+        }
+    }
+
+    fn build_response(&self, masking: &Masking) -> HarResponse {
+        HarResponse {
+            status: self.response.status.as_u16() as i64,
+            status_text: self.response.status.to_string(),
+            http_version: format!("{:?}", &self.response.http_version),
+            cookies: self.build_response_cookies(&masking.response_cookie_mask),
+            headers: self.build_response_headers(&masking.response_header_mask),
+            content: self.build_response_content(&masking.response_masks),
+            redirect_url: self
+                .response
+                .headers
+                .get("location")
+                .and_then(|v| v.to_str().ok())
+                .map(ToString::to_string),
+            headers_size: format!("{:?}", &self.response.headers).len() as i64,
+            body_size: self.build_response_body_size(),
+            comment: None,
         }
     }
 
@@ -128,11 +155,7 @@ impl HarBuilder {
         }
     }
 
-    fn build_request_headers_size(&self) -> i64 {
-        format!("{:?}", &self.request.headers).len() as i64
-    }
-
-    fn build_body_post_data(&self, masker: &BodyMask<ResponseMask>) -> Option<PostData> {
+    fn build_body_post_data(&self, masker: &BodyMask<RequestMask>) -> Option<PostData> {
         if self.request.body == BodyCapture::Empty {
             return None;
         }
@@ -144,7 +167,7 @@ impl HarBuilder {
                     .request
                     .headers
                     .get(http::header::CONTENT_TYPE)
-                    .map(|value| value.to_str().unwrap_or(""))
+                    .and_then(|value| value.to_str().ok())
                     .unwrap_or("");
 
                 let body_str = String::from_utf8_lossy(text);
@@ -166,7 +189,7 @@ impl HarBuilder {
                     .request
                     .headers
                     .get(http::header::CONTENT_TYPE)
-                    .map(|value| value.to_str().unwrap_or("application/octet-stream"))
+                    .and_then(|value| value.to_str().ok())
                     .unwrap_or("application/octet-stream");
 
                 Some(PostData {
@@ -175,6 +198,46 @@ impl HarBuilder {
                     ..Default::default()
                 })
             }
+        }
+    }
+
+    fn build_response_cookies(&self, masker: &GenericMask<ResponseCookieMask>) -> Vec<HarCookie> {
+        self.response
+            .cookies
+            .iter()
+            .map(|cookie| HarCookie {
+                name: cookie.name.clone(),
+                value: masker.mask(&cookie.name, &cookie.value),
+                ..Default::default()
+            })
+            .collect()
+    }
+
+    fn build_response_headers(&self, masker: &GenericMask<ResponseHeaderMask>) -> Vec<HarHeader> {
+        self.response
+            .headers
+            .iter()
+            .map(|(name, value)| HarHeader {
+                name: name.to_string(),
+                value: masker.mask(name.as_str(), value.to_str().unwrap_or("")),
+                comment: None,
+            })
+            .collect()
+    }
+
+    fn build_response_content(&self, response_mask: &BodyMask<ResponseMask>) -> Content {
+        todo!()
+    }
+
+    fn build_response_body_size(&self) -> i64 {
+        if self.response.status == StatusCode::NOT_MODIFIED {
+            0
+        } else {
+            self.response
+                .headers
+                .get(http::header::CONTENT_LENGTH)
+                .and_then(|v| v.to_str().unwrap().parse::<i64>().ok())
+                .unwrap_or(-1)
         }
     }
 }

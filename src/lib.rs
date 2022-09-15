@@ -4,6 +4,8 @@ mod masking;
 mod path_hint;
 mod util;
 
+pub mod middleware;
+
 pub type Masking = masking::Masking;
 pub type StringMaskingOption = masking::StringMaskingOption;
 pub type NumberMaskingOption = masking::NumberMaskingOption;
@@ -29,7 +31,7 @@ impl SpeakeasySdk {
     ///
     /// # Examples:
     /// ```rust
-    /// use speakeasy_rust_sdk::{SpeakeasySdk, Config, Masking, StringMaskingOption};
+    /// use speakeasy_rust_sdk::{SpeakeasySdk, Config, StringMaskingOption};
     ///
     /// let config = Config{
     ///     api_key: "YOUR API KEY HERE".to_string(),       // retrieve from Speakeasy API dashboard.

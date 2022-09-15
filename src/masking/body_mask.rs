@@ -328,9 +328,9 @@ mod tests {
 
         for test in tests {
             assert_eq!(
-                BodyMask::try_new(test.string_masks, test.number_masks)
+                BodyMask::<RequestMask>::try_new(test.string_masks, test.number_masks)
                     .unwrap()
-                    .mask(test.body.to_string()),
+                    .mask(test.body),
                 test.expected,
             );
         }

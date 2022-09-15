@@ -23,6 +23,7 @@ serde_json = "1.0.85"
 
 # logging
 log = "0.4.17"
+url = "2.3.1"
 
 # misc
 

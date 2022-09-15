@@ -109,10 +109,20 @@ impl HarBuilder {
         &self,
         query_string_mask: &GenericMask<QueryStringMask>,
     ) -> Vec<QueryString> {
-        todo!()
+        if let Ok(url) = url::Url::parse(&self.request.full_url) {
+            url.query_pairs()
+                .map(|(name, value)| QueryString {
+                    name: name.to_string(),
+                    value: query_string_mask.mask(&name, &value),
+                    comment: None,
+                })
+                .collect()
+        } else {
+            vec![]
+        }
     }
 
     fn build_request_headers_size(&self) -> i64 {
-        todo!()
+        format!("{:?}", &self.request.headers).len() as i64
     }
 }

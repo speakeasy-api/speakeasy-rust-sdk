@@ -34,55 +34,58 @@ mod tests {
     use super::*;
     use pretty_assertions::{assert_eq, assert_ne};
 
-    #[test]
-    fn works_on_simple_path() {
-        let expected = "/hello/world".to_string();
-
-        assert_eq!(expected, normalize_path_hint("/hello/world".to_string()));
+    struct Test {
+        #[allow(dead_code)]
+        name: &'static str,
+        path_hint: &'static str,
+        expected: &'static str,
     }
 
     #[test]
-    fn normalizes_different_formats() {
-        let normalized = "/user/{id}/account/{action}";
+    fn run() {
+        let tests = vec![
+            Test {
+                name: "simple path",
+                path_hint: "/hello/world",
+                expected: "/hello/world",
+            },
+            Test {
+                name: "simple path with wildcard",
+                path_hint: "/hello/*",
+                expected: "/hello/{wildcard}",
+            },
+            Test {
+                name: "path with mix formats",
+                path_hint: "/user/{id}/account/:action",
+                expected: "/user/{id}/account/{action}",
+            },
+            Test {
+                name: "path with multiple of the same format",
+                path_hint: "/user/:id/account/:action",
+                expected: "/user/{id}/account/{action}",
+            },
+            Test {
+                name: "path with multiple of the same format (:)",
+                path_hint: "/user/{id}/account/{action}",
+                expected: "/user/{id}/account/{action}",
+            },
+            Test {
+                name: "does not normalize unknown format",
+                path_hint: "/user/<id>/account/<action>",
+                expected: "/user/<id>/account/<action>",
+            },
+            Test {
+                name: "keeps trailing slash",
+                path_hint: "/user/{id}/account/{action}/",
+                expected: "/user/{id}/account/{action}/",
+            },
+        ];
 
-        assert_eq!(
-            normalized,
-            normalize_path_hint("/user/{id}/account/:action".to_string())
-        );
-
-        assert_eq!(
-            normalized,
-            normalize_path_hint("/user/:id/account/:action".to_string())
-        );
-    }
-
-    #[test]
-    fn normalizes_wildcard_path() {
-        let normalized = "/user/{id}/account/{wildcard}";
-
-        assert_eq!(
-            normalized,
-            normalize_path_hint("/user/:id/account/*".to_string())
-        );
-    }
-
-    #[test]
-    fn keeps_path_ending_in_slash() {
-        let normalized = "/user/{id}/account/{action}/";
-
-        assert_eq!(
-            normalized,
-            normalize_path_hint("/user/:id/account/{action}/".to_string())
-        );
-    }
-
-    #[test]
-    fn does_not_normalize_unknown_format() {
-        let normalized = "/user/{id}/account/{action}/";
-
-        assert_ne!(
-            normalized,
-            normalize_path_hint("/user/:id/account/<action>/".to_string())
-        );
+        for test in tests {
+            assert_eq!(
+                normalize_path_hint(test.path_hint.to_string()),
+                test.expected
+            );
+        }
     }
 }

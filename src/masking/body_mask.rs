@@ -6,6 +6,9 @@ use thiserror::Error;
 
 use crate::util;
 
+use super::{fields::FieldsSearchMap, Fields, NumberMaskingOption, StringMaskingOption};
+
+/// Errors for creating BodyMasks
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("invalid string field name: {0}")]
@@ -14,31 +17,50 @@ pub enum Error {
     NumberField(String),
 }
 
-#[derive(Debug)]
-pub struct BodyMask {
-    string_masks: Option<Regex>,
-    number_masks: Option<Regex>,
+/// BodyMasks holds information needed to perform masking on a request or response body
+#[derive(Debug, Clone, Default)]
+pub(crate) struct BodyMask {
+    string_masks: Option<BodyMaskInner<StringMaskingOption>>,
+    number_masks: Option<BodyMaskInner<NumberMaskingOption>>,
+}
+
+/// BodyMaskInner holds the regex, fields and options for masking
+#[derive(Debug, Clone)]
+pub(crate) struct BodyMaskInner<T> {
+    regex: Regex,
+    fields: FieldsSearchMap,
+    mask_option: T,
+}
+
+// T = StringMaskingOption or NumberMaskingOption
+impl<T> BodyMaskInner<T> {
+    fn new(regex: Regex, fields: Fields, mask_option: T) -> Self {
+        Self {
+            regex,
+            fields: fields.into(),
+            mask_option,
+        }
+    }
 }
 
 impl BodyMask {
-    /// Create a new BodyMask struct using string_field_names and number_field_names
-    /// The regex will be compiled and stored in the struct so it can be used reused, for repeated calls
-    pub fn try_new(
-        string_field_names: HashMap<String, String>,
-        number_field_names: HashMap<String, i32>,
-    ) -> Result<Self, Error> {
-        let string_masks = if !string_field_names.is_empty() {
-            // estimate the size of the final regex string to minimize allocations
-            let mut string_mask_regex = String::with_capacity(
-                (string_field_names.len() * 38) + (string_field_names.len() * 24),
-            );
+    /// Creates a BodyMask from a list of string fields to mask
+    /// errors if there is a probably creating the Regex
+    pub(crate) fn set_string_field_masks(
+        &mut self,
+        fields: Fields,
+        masks_option: StringMaskingOption,
+    ) -> Result<(), Error> {
+        let string_masks = if !fields.is_empty() {
+            let mut string_mask_regex =
+                String::with_capacity((fields.len() * 32) + (fields.len() * 24));
 
             // build up single regex from string field regexes
-            for (field_name, _replacement_value) in string_field_names {
+            for field_name in fields.iter() {
                 let _ = write!(
                     string_mask_regex,
                     r##"(?:("{}"): *)(".*?[^\\]")(?: *[, \n\r}}]?)|"##,
-                    regex::escape(&field_name)
+                    regex::escape(field_name)
                 );
             }
 
@@ -48,51 +70,103 @@ impl BodyMask {
             let string_masks = Regex::new(&string_mask_regex)
                 .map_err(|_| Error::StringField(string_mask_regex))?;
 
-            Some(string_masks)
+            Some(BodyMaskInner::new(string_masks, fields, masks_option))
         } else {
             None
         };
 
-        let number_masks = if !number_field_names.is_empty() {
-            // estimate the size of the final regex string to minimize allocations
-            let mut number_mask_regex = String::with_capacity(
-                (number_field_names.len() * 44) + (number_field_names.len() * 12),
-            );
+        self.string_masks = string_masks;
 
-            for (field_name, _replacement_value) in number_field_names {
+        Ok(())
+    }
+
+    /// Creates a BodyMask from a list of number fields to mask
+    /// errors if there is a probably creating the Regex
+    pub(crate) fn set_number_field_masks(
+        &mut self,
+        fields: Fields,
+        masks_option: NumberMaskingOption,
+    ) -> Result<(), Error> {
+        let masks = if !fields.is_empty() {
+            let mut mask_regex = String::with_capacity((fields.len() * 32) + (fields.len() * 24));
+
+            // build up single regex from string field regexes
+            for field_name in fields.iter() {
                 let _ = write!(
-                    number_mask_regex,
+                    mask_regex,
                     r##"(?:("{}"): *)(-?[0-9]+\.?[0-9]*)( *[, \n\r}}]?)|"##,
-                    regex::escape(&field_name)
+                    regex::escape(field_name)
                 );
             }
 
             // drop the last "|"
-            number_mask_regex.pop();
+            mask_regex.pop();
 
-            let number_masks = Regex::new(&number_mask_regex)
-                .map_err(|_| Error::NumberField(number_mask_regex))?;
+            let masks = Regex::new(&mask_regex).map_err(|_| Error::NumberField(mask_regex))?;
 
-            Some(number_masks)
+            Some(BodyMaskInner::new(masks, fields, masks_option))
         } else {
             None
         };
 
-        Ok(Self {
-            string_masks,
-            number_masks,
-        })
+        self.number_masks = masks;
+
+        Ok(())
+    }
+
+    /// Create a new BodyMask struct using string_field_names and number_field_names
+    /// The regex will be compiled and stored in the struct so it can be used reused, for repeated calls
+    pub(crate) fn try_new(
+        string_field_names: HashMap<String, String>,
+        number_field_names: HashMap<String, i32>,
+    ) -> Result<Self, Error> {
+        let mut body_mask = BodyMask::default();
+
+        let mut string_fields = Vec::with_capacity(string_field_names.len());
+        let mut string_masks = Vec::with_capacity(string_field_names.len());
+
+        for (field_name, replacement_value) in &string_field_names {
+            string_fields.push(field_name.clone());
+            string_masks.push(replacement_value.clone());
+        }
+
+        // set string field masks
+        body_mask.set_string_field_masks(
+            string_fields.into(),
+            StringMaskingOption::MultipleMasks(string_masks),
+        )?;
+
+        let mut number_fields = Vec::with_capacity(number_field_names.len());
+        let mut number_masks = Vec::with_capacity(number_field_names.len());
+
+        for (field_name, replacement_value) in &number_field_names {
+            number_fields.push(field_name.clone());
+            number_masks.push(*replacement_value);
+        }
+
+        // setup number field masks
+        body_mask.set_number_field_masks(
+            number_fields.into(),
+            NumberMaskingOption::MultipleMasks(number_masks),
+        )?;
+
+        Ok(body_mask)
     }
 
     /// Will use the regexes stored in the struct to mask the body
     pub fn mask(&self, body: String) -> String {
         // mask string fields
-        let body = if let Some(string_mask_regex) = self.string_masks.as_ref() {
-            string_mask_regex.replace_all(&body, |caps: &Captures| {
+        let body = if let Some(body_mask) = &self.string_masks {
+            body_mask.regex.replace_all(&body, |caps: &Captures| {
                 if let Some(field) = util::get_first_capture(caps) {
+                    let replacement_mask = body_mask
+                        .mask_option
+                        .get_mask_replacement(field, body_mask.fields.get(field));
+
                     format!(
-                        r#"{}: "testmask"{}"#,
+                        r#"{}: "{}"{}"#,
                         field,
+                        replacement_mask,
                         caps[0].chars().last().unwrap()
                     )
                 } else {
@@ -104,12 +178,17 @@ impl BodyMask {
         };
 
         // mask number fields
-        let body = if let Some(number_mask_regex) = self.number_masks.as_ref() {
-            number_mask_regex.replace_all(&body, |caps: &Captures| {
+        let body = if let Some(body_mask) = &self.number_masks {
+            body_mask.regex.replace_all(&body, |caps: &Captures| {
                 if let Some(field) = util::get_first_capture(caps) {
+                    let replacement_mask = body_mask
+                        .mask_option
+                        .get_mask_replacement(field, body_mask.fields.get(field));
+
                     format!(
-                        r#"{}: -123456789{}"#,
+                        r#"{}: {}{}"#,
                         field,
+                        replacement_mask,
                         caps[0].chars().last().unwrap()
                     )
                 } else {
@@ -122,6 +201,8 @@ impl BodyMask {
 
         body.to_string()
     }
+
+    // pub(crate) fn set_string_field_names(&self)
 }
 
 #[cfg(test)]

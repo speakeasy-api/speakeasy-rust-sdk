@@ -25,8 +25,6 @@ use crate::{
 pub struct HarBuilder {
     request: GenericRequest,
     response: GenericResponse,
-    // TODO
-    request_response_writer: Option<()>,
 }
 
 impl HarBuilder {
@@ -37,7 +35,6 @@ impl HarBuilder {
         Self {
             request: request.into(),
             response: response.into(),
-            request_response_writer: None,
         }
     }
 
@@ -225,8 +222,44 @@ impl HarBuilder {
             .collect()
     }
 
-    fn build_response_content(&self, response_mask: &BodyMask<ResponseMask>) -> Content {
-        todo!()
+    fn build_response_content(&self, masker: &BodyMask<ResponseMask>) -> Content {
+        let mime_type = self
+            .response
+            .headers
+            .get("content-type")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("application/octet-stream")
+            .to_string();
+
+        match self.request.body {
+            BodyCapture::Empty => Content {
+                size: -1,
+                mime_type: Some(mime_type),
+                ..Default::default()
+            },
+            BodyCapture::Dropped => Content {
+                size: -1,
+                text: Some(DROPPED_TEXT.to_string()),
+                mime_type: Some(mime_type),
+                ..Default::default()
+            },
+            BodyCapture::Captured(ref text) => {
+                let body_str = String::from_utf8_lossy(text);
+
+                let body_string = if &mime_type == "application/json" {
+                    masker.mask(&body_str)
+                } else {
+                    body_str.to_string()
+                };
+
+                Content {
+                    size: text.len() as i64,
+                    text: Some(body_string),
+                    mime_type: Some(mime_type),
+                    ..Default::default()
+                }
+            }
+        }
     }
 
     fn build_response_body_size(&self) -> i64 {

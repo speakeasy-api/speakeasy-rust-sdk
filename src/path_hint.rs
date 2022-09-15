@@ -3,8 +3,11 @@ use std::borrow::Cow;
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
 
+use crate::util;
+
 static RE: Lazy<Regex> = Lazy::new(|| Regex::new(r#"\{(.*?:*.*?)\}/|:(.+?)/|:(.*)|\*"#).unwrap());
 
+/// Normalize the path hint given from different web frameworks to a the OpenAPI spec
 pub fn normalize_path_hint(path_hint: String) -> String {
     RE.replace_all(&path_hint, |caps: &Captures| {
         // if its a wildcard return capture replacement early
@@ -13,8 +16,8 @@ pub fn normalize_path_hint(path_hint: String) -> String {
         };
 
         // look through the captures and use the first non-empty capture
-        if let Some(matched) = get_first_capture(caps) {
-            if caps[0].ends_with("/") {
+        if let Some(matched) = util::get_first_capture(caps) {
+            if caps[0].ends_with('/') {
                 Cow::Owned(format!("{{{}}}/", matched))
             } else {
                 Cow::Owned(format!("{{{}}}", matched))
@@ -24,16 +27,6 @@ pub fn normalize_path_hint(path_hint: String) -> String {
         }
     })
     .into_owned()
-}
-
-fn get_first_capture<'a>(caps: &'a Captures) -> Option<&'a str> {
-    for i in 1..caps.len() {
-        if let Some(c) = caps.get(i) {
-            return Some(c.as_str());
-        }
-    }
-
-    None
 }
 
 #[cfg(test)]

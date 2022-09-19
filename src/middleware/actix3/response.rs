@@ -1,7 +1,6 @@
 use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
-use std::sync::{Arc, RwLock};
 use std::task::{Context, Poll};
 
 use actix3::body::{BodySize, MessageBody, ResponseBody};
@@ -11,19 +10,19 @@ use actix_service::{Service, Transform};
 use futures::future::{ok, Ready};
 use tokio02::sync::mpsc::Sender;
 
+use crate::generic_http::{BodyCapture, GenericResponse};
 use crate::middleware::MAX_SIZE;
 
-use super::Message;
+use super::{speakeasy_header_name, Message};
 
 #[derive(Clone)]
 pub struct SpeakeasySdk {
-    sdk: Arc<RwLock<crate::SpeakeasySdk>>,
     sender: Sender<Message>,
 }
 
 impl SpeakeasySdk {
-    pub(crate) fn new(sdk: Arc<RwLock<crate::SpeakeasySdk>>, sender: Sender<Message>) -> Self {
-        Self { sdk, sender }
+    pub(crate) fn new(sender: Sender<Message>) -> Self {
+        Self { sender }
     }
 }
 
@@ -33,7 +32,7 @@ where
     B: MessageBody + 'static,
 {
     type Request = ServiceRequest;
-    type Response = ServiceResponse<BodyLogger<B>>;
+    type Response = ServiceResponse<ResponseWithBodySender<B>>;
     type Error = Error;
     type InitError = ();
     type Transform = SpeakeasySdkMiddleware<S>;
@@ -42,7 +41,6 @@ where
     fn new_transform(&self, service: S) -> Self::Future {
         ok(SpeakeasySdkMiddleware {
             service,
-            sdk: self.sdk.clone(),
             sender: self.sender.clone(),
         })
     }
@@ -50,7 +48,6 @@ where
 
 pub struct SpeakeasySdkMiddleware<S> {
     service: S,
-    sdk: Arc<RwLock<crate::SpeakeasySdk>>,
     sender: Sender<Message>,
 }
 
@@ -60,7 +57,7 @@ where
     B: MessageBody,
 {
     type Request = ServiceRequest;
-    type Response = ServiceResponse<BodyLogger<B>>;
+    type Response = ServiceResponse<ResponseWithBodySender<B>>;
     type Error = Error;
     type Future = WrapperStream<S, B>;
 
@@ -94,21 +91,30 @@ where
     B: MessageBody,
     S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
 {
-    type Output = Result<ServiceResponse<BodyLogger<B>>, Error>;
+    type Output = Result<ServiceResponse<ResponseWithBodySender<B>>, Error>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let mut sender = self.sender.clone();
+        let sender = self.sender.clone();
         let res = futures::ready!(self.project().fut.poll(cx));
 
         Poll::Ready(res.map(|res| {
+            let generic_response = GenericResponse::new(&res);
+
             res.map_body(move |head, body| {
-                ResponseBody::Body(BodyLogger {
+                let request_id = head
+                    .headers()
+                    .get(speakeasy_header_name())
+                    .and_then(|request_id| request_id.to_str().ok())
+                    .map(ToString::to_string);
+
+                if request_id.is_some() {
+                    head.headers_mut().remove(speakeasy_header_name())
+                }
+
+                ResponseBody::Body(ResponseWithBodySender {
                     body,
-                    request_id: head
-                        .headers()
-                        .get("speakeasy-request-id")
-                        .and_then(|request_id| request_id.to_str().ok())
-                        .map(ToString::to_string),
+                    generic_response,
+                    request_id,
                     sender,
                     body_dropped: false,
                     body_accum: BytesMut::new(),
@@ -119,9 +125,10 @@ where
 }
 
 #[pin_project::pin_project(PinnedDrop)]
-pub struct BodyLogger<B> {
+pub struct ResponseWithBodySender<B> {
     #[pin]
     body: ResponseBody<B>,
+    generic_response: GenericResponse,
     request_id: Option<String>,
     sender: Sender<Message>,
     body_accum: BytesMut,
@@ -129,16 +136,25 @@ pub struct BodyLogger<B> {
 }
 
 #[pin_project::pinned_drop]
-impl<B> PinnedDrop for BodyLogger<B> {
+impl<B> PinnedDrop for ResponseWithBodySender<B> {
     fn drop(self: Pin<&mut Self>) {
         if let Some(request_id) = &self.request_id {
             let mut sender = self.sender.clone();
+            let mut response = self.generic_response.clone();
             let request_id = request_id.clone();
+
+            // set body field, initialized as empty
+            if self.body_dropped {
+                response.body = BodyCapture::Dropped
+            } else if !self.body_accum.is_empty() {
+                response.body = BodyCapture::Captured(self.body_accum.to_vec().into())
+            }
 
             tokio02::task::spawn(async move {
                 sender
                     .send(super::Message::Response {
                         request_id: request_id.clone(),
+                        response,
                     })
                     .await
             });
@@ -146,7 +162,7 @@ impl<B> PinnedDrop for BodyLogger<B> {
     }
 }
 
-impl<B: MessageBody> MessageBody for BodyLogger<B> {
+impl<B: MessageBody> MessageBody for ResponseWithBodySender<B> {
     fn size(&self) -> BodySize {
         self.body.size()
     }

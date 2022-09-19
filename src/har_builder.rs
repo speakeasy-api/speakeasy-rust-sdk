@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use har::{
     v1_2::{
         Cache, Content, Cookies as HarCookie, Creator, Entries as HarEntry, Headers as HarHeader,
@@ -28,17 +28,11 @@ pub struct HarBuilder {
 }
 
 impl HarBuilder {
-    pub(crate) fn new(
-        request: impl Into<GenericRequest>,
-        response: impl Into<GenericResponse>,
-    ) -> Self {
-        Self {
-            request: request.into(),
-            response: response.into(),
-        }
+    pub(crate) fn new(request: GenericRequest, response: GenericResponse) -> Self {
+        Self { request, response }
     }
 
-    pub(crate) fn build(self, start_time: DateTime<Utc>, masking: &Masking) -> Har {
+    pub(crate) fn build(self, masking: &Masking) -> Har {
         Har {
             log: har::Spec::V1_2(Log {
                 creator: Creator {
@@ -48,9 +42,9 @@ impl HarBuilder {
                 },
                 comment: Some(format!("request capture for {}", &self.request.url)),
                 entries: vec![HarEntry {
-                    started_date_time: start_time.to_rfc3339(),
+                    started_date_time: self.request.start_time.to_rfc3339(),
                     time: Utc::now()
-                        .signed_duration_since(start_time)
+                        .signed_duration_since(self.request.start_time)
                         .num_milliseconds()
                         .abs() as f64,
                     request: self.build_request(masking),

@@ -1,7 +1,6 @@
 use std::cell::RefCell;
 use std::pin::Pin;
 use std::rc::Rc;
-use std::sync::{Arc, RwLock};
 use std::task::{Context, Poll};
 
 use actix3::{
@@ -25,13 +24,12 @@ use super::{speakeasy_header_name, Message};
 
 #[derive(Clone)]
 pub struct SpeakeasySdk {
-    sdk: Arc<RwLock<crate::SpeakeasySdk>>,
     sender: Sender<Message>,
 }
 
 impl SpeakeasySdk {
-    pub(crate) fn new(sdk: Arc<RwLock<crate::SpeakeasySdk>>, sender: Sender<Message>) -> Self {
-        Self { sdk, sender }
+    pub(crate) fn new(sender: Sender<Message>) -> Self {
+        Self { sender }
     }
 }
 
@@ -51,7 +49,6 @@ where
     fn new_transform(&self, service: S) -> Self::Future {
         ok(SpeakeasySdkMiddleware {
             service: Rc::new(RefCell::new(service)),
-            sdk: self.sdk.clone(),
             sender: self.sender.clone(),
         })
     }
@@ -60,7 +57,6 @@ where
 pub struct SpeakeasySdkMiddleware<S> {
     // This is special: We need this to avoid lifetime issues.
     service: Rc<RefCell<S>>,
-    sdk: Arc<RwLock<crate::SpeakeasySdk>>,
     sender: Sender<Message>,
 }
 
@@ -133,10 +129,8 @@ where
 
                     // if max was reached then body was dropped (not included in HAR)
                     body = BodyCapture::Dropped;
-                } else {
-                    if !captured_body.is_empty() {
-                        body = BodyCapture::Captured(captured_body.into_iter().collect());
-                    }
+                } else if !captured_body.is_empty() {
+                    body = BodyCapture::Captured(captured_body.into_iter().collect());
                 }
 
                 // put the payload back into the ServiceRequest

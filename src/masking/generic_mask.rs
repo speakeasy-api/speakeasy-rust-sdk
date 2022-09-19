@@ -23,7 +23,7 @@ impl<T> GenericMask<T> {
 
     pub(crate) fn mask(&self, field: &str, value: &str) -> String {
         match &self.0 {
-            Some(inner) => inner.mask(field, value).to_string(),
+            Some(inner) => inner.mask(field).to_string(),
             None => value.to_string(),
         }
     }
@@ -45,7 +45,7 @@ impl<T> GenericMaskInner<T> {
         }
     }
 
-    fn mask(&self, field: &str, value: &str) -> &str {
+    fn mask(&self, field: &str) -> &str {
         self.mask_option
             .get_mask_replacement(field, self.fields.get(field))
     }

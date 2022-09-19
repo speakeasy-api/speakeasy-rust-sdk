@@ -4,13 +4,14 @@ pub mod request;
 pub mod response;
 
 use actix_http::http::HeaderName;
-use std::{
-    collections::HashMap,
-    sync::{Arc, RwLock},
-};
+use std::collections::HashMap;
 use tokio02::sync::mpsc::Receiver;
 
-use crate::{generic_http::GenericRequest, SpeakeasySdk};
+use crate::{
+    generic_http::{GenericRequest, GenericResponse},
+    har_builder::HarBuilder,
+    SpeakeasySdk,
+};
 
 pub(crate) fn speakeasy_header_name() -> HeaderName {
     HeaderName::from_static("speakeasy-request-id")
@@ -24,10 +25,12 @@ pub(crate) enum Message {
     },
     Response {
         request_id: String,
+        response: GenericResponse,
     },
 }
 
 pub struct Middleware {
+    sdk: SpeakeasySdk,
     requests: HashMap<String, GenericRequest>,
     receiver: Receiver<Message>,
 
@@ -37,20 +40,21 @@ pub struct Middleware {
 
 impl Middleware {
     pub fn new(sdk: SpeakeasySdk) -> Self {
-        let global = Arc::new(RwLock::new(sdk));
-
         let (sender, receiver) = tokio02::sync::mpsc::channel(100);
 
         Self {
+            sdk,
             requests: HashMap::new(),
             receiver,
-            request_capture: request::SpeakeasySdk::new(global.clone(), sender.clone()),
-            response_capture: response::SpeakeasySdk::new(global, sender),
+            request_capture: request::SpeakeasySdk::new(sender.clone()),
+            response_capture: response::SpeakeasySdk::new(sender),
         }
     }
 
     pub fn start(self) -> (request::SpeakeasySdk, response::SpeakeasySdk) {
+        let mut requests = self.requests;
         let mut receiver = self.receiver;
+        let masking = self.sdk.masking.clone();
 
         tokio02::spawn(async move {
             while let Some(msg) = receiver.recv().await {
@@ -59,10 +63,28 @@ impl Middleware {
                         request_id,
                         request,
                     } => {
-                        println!("request: {:#?}", request)
+                        log::debug!(
+                            "request received id: {}, request: {:?}",
+                            &request_id,
+                            &request
+                        );
+                        requests.insert(request_id.clone(), request);
                     }
-                    Message::Response { request_id } => {
-                        println!("Response: {}", request_id)
+                    Message::Response {
+                        request_id,
+                        response,
+                    } => {
+                        if let Some(request) = requests.remove(&request_id) {
+                            log::debug!(
+                                "response received, request_id: {}, request: {:?}, response: {:?}",
+                                &request_id,
+                                &request,
+                                &response
+                            );
+
+                            let har = HarBuilder::new(request, response).build(&masking);
+                            println!("HAR BUILT: {:#?}", har);
+                        }
                     }
                 }
             }

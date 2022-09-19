@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use http::{version::Version, HeaderMap};
 
 pub(crate) const DROPPED_TEXT: &str = "--dropped--";
@@ -20,6 +21,7 @@ pub(crate) enum BodyCapture {
 /// A generic HTTP request, can be created from a request from a web framework
 #[derive(Debug, Clone)]
 pub(crate) struct GenericRequest {
+    pub(crate) start_time: DateTime<Utc>,
     pub(crate) method: String,
     pub(crate) hostname: Option<String>,
     pub(crate) url: String,
@@ -34,7 +36,6 @@ pub(crate) struct GenericRequest {
 /// A generic HTTP response, can be created from a response from a web framework
 #[derive(Debug, Clone)]
 pub(crate) struct GenericResponse {
-    pub(crate) method: String,
     pub(crate) status: http::StatusCode,
     pub(crate) http_version: Version,
     pub(crate) headers: HeaderMap,

@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap, marker::PhantomData};
+use std::{borrow::Cow, marker::PhantomData};
 
 use regex::{Captures, Regex};
 use std::fmt::Write as _;
@@ -121,45 +121,6 @@ impl<T: Default> BodyMask<T> {
         Ok(())
     }
 
-    /// Create a new BodyMask struct using string_field_names and number_field_names
-    /// The regex will be compiled and stored in the struct so it can be used reused, for repeated calls
-    pub(crate) fn try_new(
-        string_field_names: HashMap<String, String>,
-        number_field_names: HashMap<String, i32>,
-    ) -> Result<Self, Error> {
-        let mut body_mask = BodyMask::default();
-
-        let mut string_fields = Vec::with_capacity(string_field_names.len());
-        let mut string_masks = Vec::with_capacity(string_field_names.len());
-
-        for (field_name, replacement_value) in &string_field_names {
-            string_fields.push(field_name.clone());
-            string_masks.push(replacement_value.clone());
-        }
-
-        // set string field masks
-        body_mask.set_string_field_masks(
-            string_fields.into(),
-            StringMaskingOption::MultipleMasks(string_masks),
-        )?;
-
-        let mut number_fields = Vec::with_capacity(number_field_names.len());
-        let mut number_masks = Vec::with_capacity(number_field_names.len());
-
-        for (field_name, replacement_value) in &number_field_names {
-            number_fields.push(field_name.clone());
-            number_masks.push(*replacement_value);
-        }
-
-        // setup number field masks
-        body_mask.set_number_field_masks(
-            number_fields.into(),
-            NumberMaskingOption::MultipleMasks(number_masks),
-        )?;
-
-        Ok(body_mask)
-    }
-
     /// Will use the regexes stored in the struct to mask the body
     pub fn mask(&self, body: &str) -> String {
         // mask string fields
@@ -217,6 +178,47 @@ mod tests {
     use super::*;
     use maplit::hashmap;
     use pretty_assertions::assert_eq;
+
+    impl<T> BodyMask<T> {
+        /// Create a new BodyMask struct using string_field_names and number_field_names
+        /// The regex will be compiled and stored in the struct so it can be used reused, for repeated calls
+        pub(crate) fn try_new(
+            string_field_names: HashMap<String, String>,
+            number_field_names: HashMap<String, i32>,
+        ) -> Result<Self, Error> {
+            let mut body_mask = BodyMask::default();
+
+            let mut string_fields = Vec::with_capacity(string_field_names.len());
+            let mut string_masks = Vec::with_capacity(string_field_names.len());
+
+            for (field_name, replacement_value) in &string_field_names {
+                string_fields.push(field_name.clone());
+                string_masks.push(replacement_value.clone());
+            }
+
+            // set string field masks
+            body_mask.set_string_field_masks(
+                string_fields.into(),
+                StringMaskingOption::MultipleMasks(string_masks),
+            )?;
+
+            let mut number_fields = Vec::with_capacity(number_field_names.len());
+            let mut number_masks = Vec::with_capacity(number_field_names.len());
+
+            for (field_name, replacement_value) in &number_field_names {
+                number_fields.push(field_name.clone());
+                number_masks.push(*replacement_value);
+            }
+
+            // setup number field masks
+            body_mask.set_number_field_masks(
+                number_fields.into(),
+                NumberMaskingOption::MultipleMasks(number_masks),
+            )?;
+
+            Ok(body_mask)
+        }
+    }
 
     struct Test {
         #[allow(dead_code)]

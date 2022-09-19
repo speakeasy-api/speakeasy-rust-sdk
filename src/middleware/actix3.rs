@@ -54,7 +54,17 @@ impl Middleware {
 
         tokio02::spawn(async move {
             while let Some(msg) = receiver.recv().await {
-                println!("RECEIVED MSG: {:#?}", msg);
+                match msg {
+                    Message::Request {
+                        request_id,
+                        request,
+                    } => {
+                        println!("request: {:#?}", request)
+                    }
+                    Message::Response { request_id } => {
+                        println!("Response: {}", request_id)
+                    }
+                }
             }
         });
 

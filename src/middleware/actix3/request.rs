@@ -85,7 +85,7 @@ where
         let mut sender = self.sender.clone();
 
         Box::pin(async move {
-            let mut max_reached = true;
+            let mut max_reached = false;
             let mut captured_body = BytesMut::new();
 
             let mut body = BodyCapture::Empty;
@@ -115,7 +115,7 @@ where
                     captured_body.extend_from_slice(&chunk?);
 
                     // content_length might have not been accurate so we need to check the size
-                    if captured_body.len() > MAX_SIZE {
+                    if captured_body.len() >= MAX_SIZE {
                         max_reached = true;
                         break;
                     }
@@ -134,28 +134,34 @@ where
                     // if max was reached then body was dropped (not included in HAR)
                     body = BodyCapture::Dropped;
                 } else {
-                    body = BodyCapture::Captured(captured_body.into_iter().collect());
-                }
-
-                let generic_request = GenericRequest::new(&req, body);
-
-                if let Err(error) = sender
-                    .send(Message::Request {
-                        request_id: request_id.clone(),
-                        request: generic_request,
-                    })
-                    .await
-                {
-                    log::error!(
-                        "Failed to send request to channel: {}, id {}",
-                        error,
-                        &request_id
-                    );
+                    if !captured_body.is_empty() {
+                        body = BodyCapture::Captured(captured_body.into_iter().collect());
+                    }
                 }
 
                 // put the payload back into the ServiceRequest
                 req.set_payload(payload.into());
-            };
+            } else {
+                // if content_length is larger than the max size, drop the body
+                body = BodyCapture::Dropped;
+            }
+
+            // create a new GenericRequest from the ServiceRequest
+            let generic_request = GenericRequest::new(&req, body);
+
+            if let Err(error) = sender
+                .send(Message::Request {
+                    request_id: request_id.clone(),
+                    request: generic_request,
+                })
+                .await
+            {
+                log::error!(
+                    "Failed to send request to channel: {}, id {}",
+                    error,
+                    &request_id
+                );
+            }
 
             let mut res = svc.call(req).await?;
             res.headers_mut().insert(

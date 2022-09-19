@@ -7,32 +7,18 @@ use actix_http::http::HeaderName;
 use std::collections::HashMap;
 use tokio02::sync::mpsc::Receiver;
 
-use crate::{
-    generic_http::{GenericRequest, GenericResponse},
-    har_builder::HarBuilder,
-    SpeakeasySdk,
-};
+use crate::{generic_http::GenericRequest, har_builder::HarBuilder, SpeakeasySdk};
+
+use super::{MiddlewareMessage, RequestId};
 
 pub(crate) fn speakeasy_header_name() -> HeaderName {
     HeaderName::from_static("speakeasy-request-id")
 }
 
-#[derive(Debug)]
-pub(crate) enum Message {
-    Request {
-        request_id: String,
-        request: GenericRequest,
-    },
-    Response {
-        request_id: String,
-        response: GenericResponse,
-    },
-}
-
 pub struct Middleware {
     sdk: SpeakeasySdk,
-    requests: HashMap<String, GenericRequest>,
-    receiver: Receiver<Message>,
+    requests: HashMap<RequestId, GenericRequest>,
+    receiver: Receiver<MiddlewareMessage>,
 
     pub request_capture: request::SpeakeasySdk,
     pub response_capture: response::SpeakeasySdk,
@@ -59,24 +45,24 @@ impl Middleware {
         tokio02::spawn(async move {
             while let Some(msg) = receiver.recv().await {
                 match msg {
-                    Message::Request {
+                    MiddlewareMessage::Request {
                         request_id,
                         request,
                     } => {
                         log::debug!(
-                            "request received id: {}, request: {:?}",
+                            "request received id: {:?}, request: {:?}",
                             &request_id,
                             &request
                         );
                         requests.insert(request_id.clone(), request);
                     }
-                    Message::Response {
+                    MiddlewareMessage::Response {
                         request_id,
                         response,
                     } => {
                         if let Some(request) = requests.remove(&request_id) {
                             log::debug!(
-                                "response received, request_id: {}, request: {:?}, response: {:?}",
+                                "response received, request_id: {:?}, request: {:?}, response: {:?}",
                                 &request_id,
                                 &request,
                                 &response

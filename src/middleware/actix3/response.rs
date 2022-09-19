@@ -11,17 +11,17 @@ use futures::future::{ok, Ready};
 use tokio02::sync::mpsc::Sender;
 
 use crate::generic_http::{BodyCapture, GenericResponse};
-use crate::middleware::MAX_SIZE;
+use crate::middleware::{RequestId, MAX_SIZE};
 
-use super::{speakeasy_header_name, Message};
+use super::{speakeasy_header_name, MiddlewareMessage};
 
 #[derive(Clone)]
 pub struct SpeakeasySdk {
-    sender: Sender<Message>,
+    sender: Sender<MiddlewareMessage>,
 }
 
 impl SpeakeasySdk {
-    pub(crate) fn new(sender: Sender<Message>) -> Self {
+    pub(crate) fn new(sender: Sender<MiddlewareMessage>) -> Self {
         Self { sender }
     }
 }
@@ -48,7 +48,7 @@ where
 
 pub struct SpeakeasySdkMiddleware<S> {
     service: S,
-    sender: Sender<Message>,
+    sender: Sender<MiddlewareMessage>,
 }
 
 impl<S, B> Service for SpeakeasySdkMiddleware<S>
@@ -80,7 +80,7 @@ where
     B: MessageBody,
     S: Service,
 {
-    sender: Sender<Message>,
+    sender: Sender<MiddlewareMessage>,
     #[pin]
     fut: S::Future,
     _t: PhantomData<(B,)>,
@@ -105,7 +105,8 @@ where
                     .headers()
                     .get(speakeasy_header_name())
                     .and_then(|request_id| request_id.to_str().ok())
-                    .map(ToString::to_string);
+                    .map(ToString::to_string)
+                    .map(RequestId::from);
 
                 if request_id.is_some() {
                     head.headers_mut().remove(speakeasy_header_name())
@@ -129,8 +130,8 @@ pub struct ResponseWithBodySender<B> {
     #[pin]
     body: ResponseBody<B>,
     generic_response: GenericResponse,
-    request_id: Option<String>,
-    sender: Sender<Message>,
+    request_id: Option<RequestId>,
+    sender: Sender<MiddlewareMessage>,
     body_accum: BytesMut,
     body_dropped: bool,
 }
@@ -152,7 +153,7 @@ impl<B> PinnedDrop for ResponseWithBodySender<B> {
 
             tokio02::task::spawn(async move {
                 sender
-                    .send(super::Message::Response {
+                    .send(super::MiddlewareMessage::Response {
                         request_id: request_id.clone(),
                         response,
                     })

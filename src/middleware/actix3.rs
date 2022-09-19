@@ -18,7 +18,7 @@ impl Middleware {
 
         Self {
             request_capture: request::SpeakeasySdk::new(global.clone()),
-            response_capture: response::SpeakeasySdk::new(global.clone()),
+            response_capture: response::SpeakeasySdk::new(global),
         }
     }
 }

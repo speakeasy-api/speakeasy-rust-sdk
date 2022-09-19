@@ -4,16 +4,20 @@ use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 use std::task::{Context, Poll};
 
-use actix3::web::BytesMut;
-use actix3::{dev::ServiceRequest, dev::ServiceResponse, Error, HttpMessage};
-use actix_http::h1::Payload;
-use actix_http::http::HeaderName;
+use actix3::{
+    dev::{ServiceRequest, ServiceResponse},
+    web::BytesMut,
+    Error, HttpMessage,
+};
+use actix_http::{h1::Payload, http::HeaderName};
 use actix_service::{Service, Transform};
-use futures::future::{ok, Future, Ready};
-use futures::stream::StreamExt;
-use futures::Stream;
-use http::header::CONTENT_LENGTH;
-use http::HeaderValue;
+use futures::{
+    future::{ok, Future, Ready},
+    stream::StreamExt,
+};
+use http::{header::CONTENT_LENGTH, HeaderValue};
+
+use crate::generic_http::BodyCapture;
 
 #[derive(Clone)]
 pub struct SpeakeasySdk {
@@ -72,33 +76,68 @@ where
         let mut svc = self.service.clone();
 
         Box::pin(async move {
-            let mut body = BytesMut::new();
+            let max_size = 1 * 1024 * 1024;
+            let mut max_reached = true;
+            let mut captured_body = BytesMut::new();
+
+            let mut body = BodyCapture::Empty;
 
             let headers = req.headers();
-            headers.get(CONTENT_LENGTH).map(|v| {
-                let len = v.to_str().unwrap().parse::<usize>().unwrap();
-                println!("Content-Length: {}", len);
-                body.reserve(len);
-            });
 
-            let mut stream = req.take_payload();
+            // attempt to content length from headers
+            let content_length = headers
+                .get(CONTENT_LENGTH)
+                .and_then(|value| value.to_str().unwrap().parse::<usize>().ok())
+                .unwrap_or_default();
 
-            while let Some(chunk) = stream.next().await {
-                body.extend_from_slice(&chunk?);
-            }
+            // if content_length is smaller than the max size attempt to capture the body
+            if content_length <= max_size {
+                if content_length > 0 {
+                    captured_body.reserve(content_length);
+                }
 
-            println!("request body: {:?}", body);
+                // take the payload stream out of the request to work with it
+                let mut payload_stream = req.take_payload();
 
-            // put the payload back into the ServiceRequest
-            let (_sender, mut payload) = Payload::create(true);
-            payload.unread_data(body.freeze());
-            req.set_payload(payload.into());
+                // create new empty payload, we will fill put the original payload back into this
+                // and put back into the request after we have captured the body
+                let (mut payload_sender, mut payload) = Payload::create(true);
 
-            let hn = HeaderName::from_static("speakeasy-request-id");
+                while let Some(chunk) = payload_stream.next().await {
+                    captured_body.extend_from_slice(&chunk?);
+
+                    // content_length might have not been accurate so we need to check the size
+                    if captured_body.len() > max_size {
+                        max_reached = true;
+                        break;
+                    }
+                }
+
+                // put read data into the new payload
+                payload.unread_data(captured_body.clone().freeze());
+
+                if max_reached {
+                    // if max size is reached, send the rest of the data straight into the new payload
+                    // without reading it to memory
+                    while let Some(chunk) = payload_stream.next().await {
+                        payload_sender.feed_data(chunk?);
+                    }
+
+                    // if max was reached then body was dropped (not included in HAR)
+                    body = BodyCapture::Dropped;
+                } else {
+                    body = BodyCapture::Captured(captured_body.into_iter().collect());
+                }
+
+                // put the payload back into the ServiceRequest
+                req.set_payload(payload.into());
+            };
+
+            let header_name = HeaderName::from_static("speakeasy-request-id");
 
             let mut res = svc.call(req).await?;
             res.headers_mut()
-                .insert(hn, HeaderValue::from_str("123").unwrap());
+                .insert(header_name, HeaderValue::from_str("123").unwrap());
 
             Ok(res)
         })

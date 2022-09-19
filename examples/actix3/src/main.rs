@@ -20,6 +20,17 @@ async fn index(item: web::Json<Person>) -> HttpResponse {
     HttpResponse::Ok().json(item.0)
 }
 
+#[post("/upload")]
+async fn upload(item: web::Bytes) -> impl Responder {
+    println!("bytes: {:?}", item.len());
+    use std::{fs::File, io::Write};
+
+    let mut file = File::create("uploads/copied.png").unwrap();
+    file.write_all(&item).unwrap();
+
+    format!("Uploaded!")
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
@@ -58,8 +69,10 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(speakeasy_middleware.request_capture)
             .wrap(speakeasy_middleware.response_capture)
+            .app_data(web::PayloadConfig::new(3_145_728))
             .service(greet)
             .service(index)
+            .service(upload)
     })
     .bind(("127.0.0.1", 8080))?
     .run()

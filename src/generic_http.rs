@@ -23,11 +23,10 @@ pub(crate) struct GenericRequest {
     pub(crate) method: String,
     pub(crate) hostname: Option<String>,
     pub(crate) url: String,
-    pub(crate) protocol: Option<String>,
     pub(crate) http_version: Version,
     pub(crate) headers: HeaderMap,
     pub(crate) cookies: Vec<GenericCookie>,
-    pub(crate) port: Option<i32>,
+    pub(crate) port: Option<u16>,
     pub(crate) body: BodyCapture,
 }
 

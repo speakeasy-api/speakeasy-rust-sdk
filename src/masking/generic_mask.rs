@@ -46,9 +46,9 @@ impl<T> GenericMaskInner<T> {
     }
 
     fn mask<'a>(&'a self, field: &str, value: &'a str) -> &str {
+        // If the field is not in the list of fields to mask, return the value as is.
         if let Some(field_index) = self.fields.get(field) {
-            self.mask_option
-                .get_mask_replacement(field, Some(field_index))
+            self.mask_option.get_mask_replacement(field, field_index)
         } else {
             value
         }

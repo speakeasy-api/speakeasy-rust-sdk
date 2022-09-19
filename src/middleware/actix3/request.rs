@@ -9,24 +9,29 @@ use actix3::{
     web::BytesMut,
     Error, HttpMessage,
 };
-use actix_http::{h1::Payload, http::HeaderName};
+use actix_http::h1::Payload;
 use actix_service::{Service, Transform};
 use futures::{
     future::{ok, Future, Ready},
     stream::StreamExt,
 };
 use http::{header::CONTENT_LENGTH, HeaderValue};
+use tokio02::sync::mpsc::Sender;
 
-use crate::generic_http::BodyCapture;
+use crate::generic_http::{BodyCapture, GenericRequest};
+use crate::middleware::MAX_SIZE;
+
+use super::{speakeasy_header_name, Message};
 
 #[derive(Clone)]
 pub struct SpeakeasySdk {
     sdk: Arc<RwLock<crate::SpeakeasySdk>>,
+    sender: Sender<Message>,
 }
 
 impl SpeakeasySdk {
-    pub fn new(sdk: Arc<RwLock<crate::SpeakeasySdk>>) -> Self {
-        Self { sdk }
+    pub(crate) fn new(sdk: Arc<RwLock<crate::SpeakeasySdk>>, sender: Sender<Message>) -> Self {
+        Self { sdk, sender }
     }
 }
 
@@ -47,6 +52,7 @@ where
         ok(SpeakeasySdkMiddleware {
             service: Rc::new(RefCell::new(service)),
             sdk: self.sdk.clone(),
+            sender: self.sender.clone(),
         })
     }
 }
@@ -55,6 +61,7 @@ pub struct SpeakeasySdkMiddleware<S> {
     // This is special: We need this to avoid lifetime issues.
     service: Rc<RefCell<S>>,
     sdk: Arc<RwLock<crate::SpeakeasySdk>>,
+    sender: Sender<Message>,
 }
 
 impl<S, B> Service for SpeakeasySdkMiddleware<S>
@@ -73,10 +80,11 @@ where
     }
 
     fn call(&mut self, mut req: ServiceRequest) -> Self::Future {
+        let request_id = uuid::Uuid::new_v4().to_string();
         let mut svc = self.service.clone();
+        let mut sender = self.sender.clone();
 
         Box::pin(async move {
-            let max_size = 1 * 1024 * 1024;
             let mut max_reached = true;
             let mut captured_body = BytesMut::new();
 
@@ -91,7 +99,7 @@ where
                 .unwrap_or_default();
 
             // if content_length is smaller than the max size attempt to capture the body
-            if content_length <= max_size {
+            if content_length <= MAX_SIZE {
                 if content_length > 0 {
                     captured_body.reserve(content_length);
                 }
@@ -107,7 +115,7 @@ where
                     captured_body.extend_from_slice(&chunk?);
 
                     // content_length might have not been accurate so we need to check the size
-                    if captured_body.len() > max_size {
+                    if captured_body.len() > MAX_SIZE {
                         max_reached = true;
                         break;
                     }
@@ -129,15 +137,31 @@ where
                     body = BodyCapture::Captured(captured_body.into_iter().collect());
                 }
 
+                let generic_request = GenericRequest::new(&req, body);
+
+                if let Err(error) = sender
+                    .send(Message::Request {
+                        request_id: request_id.clone(),
+                        request: generic_request,
+                    })
+                    .await
+                {
+                    log::error!(
+                        "Failed to send request to channel: {}, id {}",
+                        error,
+                        &request_id
+                    );
+                }
+
                 // put the payload back into the ServiceRequest
                 req.set_payload(payload.into());
             };
 
-            let header_name = HeaderName::from_static("speakeasy-request-id");
-
             let mut res = svc.call(req).await?;
-            res.headers_mut()
-                .insert(header_name, HeaderValue::from_str("123").unwrap());
+            res.headers_mut().insert(
+                speakeasy_header_name(),
+                HeaderValue::from_str(&request_id).unwrap(),
+            );
 
             Ok(res)
         })

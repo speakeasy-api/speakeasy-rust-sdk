@@ -16,7 +16,7 @@ async fn greet(name: web::Path<String>) -> impl Responder {
 
 #[post("/")]
 async fn index(item: web::Json<Person>) -> HttpResponse {
-    println!("model: {:?}", &item);
+    println!("json: {:?}", &item);
     HttpResponse::Ok().json(item.0)
 }
 
@@ -65,10 +65,11 @@ async fn main() -> std::io::Result<()> {
             .with_response_field_mask_string("secret", StringMaskingOption::default());
 
         let speakeasy_middleware = Middleware::new(sdk);
+        let (request_capture, response_capture) = speakeasy_middleware.start();
 
         App::new()
-            .wrap(speakeasy_middleware.request_capture)
-            .wrap(speakeasy_middleware.response_capture)
+            .wrap(request_capture)
+            .wrap(response_capture)
             .app_data(web::PayloadConfig::new(3_145_728))
             .service(greet)
             .service(index)

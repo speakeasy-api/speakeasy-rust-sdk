@@ -3,21 +3,34 @@ use actix3::dev::{ServiceRequest, ServiceResponse};
 use actix_http::HttpMessage;
 use chrono::Utc;
 
+use super::speakeasy_header_name;
+
 impl GenericRequest {
     pub fn new(request: &ServiceRequest, body: BodyCapture) -> Self {
         // NOTE IMPORTANT: have to get cookies before getting headers or there will be a BorrowMut
         // already borrowed error from actix
         let cookies = get_request_cookies(request);
 
+        let scheme = request.connection_info().scheme().to_string();
+        let path = request.uri().to_string();
+        let host = request.connection_info().host().to_string();
+
+        let url_string = format!("{}://{}{}", scheme, host, path);
+        let full_url = url::Url::parse(&url_string).ok();
+
+        let port = full_url.as_ref().and_then(|u| u.port());
+
         GenericRequest {
             start_time: Utc::now(),
+            scheme,
+            full_url,
             method: request.method().to_string(),
-            hostname: Some(request.connection_info().host().to_string()),
-            url: request.uri().to_string(),
+            host,
+            path,
             http_version: request.version(),
             headers: get_request_headers(request),
             cookies,
-            port: get_port(request.uri()),
+            port,
             body,
         }
     }
@@ -45,10 +58,6 @@ fn get_request_cookies(cookies: &ServiceRequest) -> Vec<GenericCookie> {
     }
 }
 
-fn get_port(uri: &http::Uri) -> Option<u16> {
-    Some(uri.port()?.as_u16())
-}
-
 impl GenericResponse {
     pub(crate) fn new<T>(response: &ServiceResponse<T>) -> Self {
         let status = response.status();
@@ -69,6 +78,7 @@ fn get_response_headers<T>(response: &ServiceResponse<T>) -> http::HeaderMap {
     response
         .headers()
         .iter()
+        .filter(|(k, _)| k != &speakeasy_header_name())
         .map(|(k, v)| (k.clone(), v.clone()))
         .collect()
 }

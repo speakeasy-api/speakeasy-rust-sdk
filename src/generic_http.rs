@@ -22,9 +22,11 @@ pub(crate) enum BodyCapture {
 #[derive(Debug, Clone)]
 pub(crate) struct GenericRequest {
     pub(crate) start_time: DateTime<Utc>,
+    pub(crate) scheme: String,
+    pub(crate) full_url: Option<url::Url>,
     pub(crate) method: String,
-    pub(crate) hostname: Option<String>,
-    pub(crate) url: String,
+    pub(crate) host: String,
+    pub(crate) path: String,
     pub(crate) http_version: Version,
     pub(crate) headers: HeaderMap,
     pub(crate) cookies: Vec<GenericCookie>,

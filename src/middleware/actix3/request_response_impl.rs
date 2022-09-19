@@ -1,9 +1,10 @@
-use crate::generic_http::{BodyCapture, GenericCookie, GenericRequest, GenericResponse};
+use crate::{
+    generic_http::{BodyCapture, GenericCookie, GenericRequest, GenericResponse},
+    middleware::speakeasy_header_name,
+};
 use actix3::dev::{ServiceRequest, ServiceResponse};
 use actix_http::HttpMessage;
 use chrono::Utc;
-
-use super::speakeasy_header_name;
 
 impl GenericRequest {
     pub fn new(request: &ServiceRequest, body: BodyCapture) -> Self {

@@ -3,6 +3,8 @@ mod request_id;
 
 use std::collections::HashMap;
 
+use actix_http::http::HeaderName;
+
 use crate::{
     generic_http::{GenericRequest, GenericResponse},
     har_builder::HarBuilder,
@@ -11,6 +13,10 @@ use crate::{
 
 // 1MB
 pub(crate) const MAX_SIZE: usize = 1024 * 1024;
+
+pub(crate) fn speakeasy_header_name() -> HeaderName {
+    HeaderName::from_static("speakeasy-request-id")
+}
 
 pub(crate) type RequestId = request_id::RequestId;
 

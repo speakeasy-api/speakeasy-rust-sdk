@@ -3,15 +3,10 @@ mod request_response_impl;
 pub mod request;
 pub mod response;
 
-use actix_http::http::HeaderName;
 use tokio02::sync::mpsc::Receiver;
 
 use super::{MiddlewareMessage, State};
 use crate::SpeakeasySdk;
-
-pub(crate) fn speakeasy_header_name() -> HeaderName {
-    HeaderName::from_static("speakeasy-request-id")
-}
 
 pub struct Middleware {
     state: State,

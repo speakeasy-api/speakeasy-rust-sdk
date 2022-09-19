@@ -11,9 +11,9 @@ use futures::future::{ok, Ready};
 use tokio02::sync::mpsc::Sender;
 
 use crate::generic_http::{BodyCapture, GenericResponse};
-use crate::middleware::{RequestId, MAX_SIZE};
+use crate::middleware::{speakeasy_header_name, RequestId, MAX_SIZE};
 
-use super::{speakeasy_header_name, MiddlewareMessage};
+use super::MiddlewareMessage;
 
 #[derive(Clone)]
 pub struct SpeakeasySdk {

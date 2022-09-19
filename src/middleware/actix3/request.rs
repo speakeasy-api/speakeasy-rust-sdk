@@ -18,9 +18,9 @@ use http::{header::CONTENT_LENGTH, HeaderValue};
 use tokio02::sync::mpsc::Sender;
 
 use crate::generic_http::{BodyCapture, GenericRequest};
-use crate::middleware::{RequestId, MAX_SIZE};
+use crate::middleware::{speakeasy_header_name, RequestId, MAX_SIZE};
 
-use super::{speakeasy_header_name, MiddlewareMessage};
+use super::MiddlewareMessage;
 
 #[derive(Clone)]
 pub struct SpeakeasySdk {

@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap};
+use std::{borrow::Cow, collections::HashMap, marker::PhantomData};
 
 use regex::{Captures, Regex};
 use std::fmt::Write as _;
@@ -17,9 +17,16 @@ pub enum Error {
     NumberField(String),
 }
 
+#[derive(Debug, Clone, Default)]
+pub(crate) struct RequestMask;
+
+#[derive(Debug, Clone, Default)]
+pub(crate) struct ResponseMask;
+
 /// BodyMasks holds information needed to perform masking on a request or response body
 #[derive(Debug, Clone, Default)]
-pub(crate) struct BodyMask {
+pub(crate) struct BodyMask<T> {
+    phantom: PhantomData<T>,
     string_masks: Option<BodyMaskInner<StringMaskingOption>>,
     number_masks: Option<BodyMaskInner<NumberMaskingOption>>,
 }
@@ -43,7 +50,7 @@ impl<T> BodyMaskInner<T> {
     }
 }
 
-impl BodyMask {
+impl<T: Default> BodyMask<T> {
     /// Creates a BodyMask from a list of string fields to mask
     /// errors if there is a probably creating the Regex
     pub(crate) fn set_string_field_masks(
@@ -154,10 +161,10 @@ impl BodyMask {
     }
 
     /// Will use the regexes stored in the struct to mask the body
-    pub fn mask(&self, body: String) -> String {
+    pub fn mask(&self, body: &str) -> String {
         // mask string fields
         let body = if let Some(body_mask) = &self.string_masks {
-            body_mask.regex.replace_all(&body, |caps: &Captures| {
+            body_mask.regex.replace_all(body, |caps: &Captures| {
                 if let Some(field) = util::get_first_capture(caps) {
                     let replacement_mask = body_mask
                         .mask_option
@@ -174,7 +181,7 @@ impl BodyMask {
                 }
             })
         } else {
-            Cow::Owned(body)
+            Cow::Borrowed(body)
         };
 
         // mask number fields
@@ -321,9 +328,9 @@ mod tests {
 
         for test in tests {
             assert_eq!(
-                BodyMask::try_new(test.string_masks, test.number_masks)
+                BodyMask::<RequestMask>::try_new(test.string_masks, test.number_masks)
                     .unwrap()
-                    .mask(test.body.to_string()),
+                    .mask(test.body),
                 test.expected,
             );
         }

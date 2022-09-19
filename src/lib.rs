@@ -1,3 +1,5 @@
+mod generic_http;
+mod har_builder;
 mod masking;
 mod path_hint;
 mod util;

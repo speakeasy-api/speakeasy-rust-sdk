@@ -1,42 +1,35 @@
-mod body_mask;
 mod fields;
 mod option;
+
+pub(crate) mod body_mask;
+pub(crate) mod generic_mask;
 
 pub type StringMaskingOption = option::StringMaskingOption;
 pub type NumberMaskingOption = option::NumberMaskingOption;
 
 pub(crate) type Fields = fields::Fields;
 
-use self::{body_mask::BodyMask, fields::FieldsSearchMap};
+use self::{
+    body_mask::{BodyMask, RequestMask, ResponseMask},
+    generic_mask::{
+        GenericMask, QueryStringMask, RequestCookieMask, RequestHeaderMask, ResponseCookieMask,
+        ResponseHeaderMask,
+    },
+};
 
 pub(crate) const DEFAULT_STRING_MASK: &str = "__masked__";
 pub(crate) const DEFAULT_NUMBER_MASK: i32 = -12321;
 
-#[derive(Debug, Clone)]
-pub(crate) struct GenericMask {
-    fields: FieldsSearchMap,
-    mask_option: StringMaskingOption,
-}
-
-impl GenericMask {
-    pub(crate) fn new(fields: Fields, mask_option: StringMaskingOption) -> Self {
-        Self {
-            fields: fields.into(),
-            mask_option,
-        }
-    }
-}
-
 /// All masking options, see for functions for more details on setting them
 #[derive(Debug, Clone, Default)]
 pub struct Masking {
-    query_string_mask: Option<GenericMask>,
-    request_header_mask: Option<GenericMask>,
-    response_header_mask: Option<GenericMask>,
-    request_cookie_mask: Option<GenericMask>,
-    response_cookie_mask: Option<GenericMask>,
-    response_masks: BodyMask,
-    request_masks: BodyMask,
+    pub(crate) query_string_mask: GenericMask<QueryStringMask>,
+    pub(crate) request_header_mask: GenericMask<RequestHeaderMask>,
+    pub(crate) response_header_mask: GenericMask<ResponseHeaderMask>,
+    pub(crate) request_cookie_mask: GenericMask<RequestCookieMask>,
+    pub(crate) response_cookie_mask: GenericMask<ResponseCookieMask>,
+    pub(crate) request_masks: BodyMask<RequestMask>,
+    pub(crate) response_masks: BodyMask<ResponseMask>,
 }
 
 impl Masking {
@@ -93,7 +86,7 @@ impl Masking {
         fields: impl Into<Fields>,
         masking_option: impl Into<StringMaskingOption>,
     ) {
-        self.query_string_mask = Some(GenericMask::new(fields.into(), masking_option.into()));
+        self.query_string_mask = GenericMask::new(fields.into(), masking_option.into());
     }
 
     /// with_request_header_mask will mask the specified request headers with an optional mask string.
@@ -149,7 +142,7 @@ impl Masking {
         fields: impl Into<Fields>,
         masking_option: impl Into<StringMaskingOption>,
     ) {
-        self.request_header_mask = Some(GenericMask::new(fields.into(), masking_option.into()));
+        self.request_header_mask = GenericMask::new(fields.into(), masking_option.into());
     }
 
     /// with_response_cookie_mask will mask the specified response cookies with an optional mask string.
@@ -205,7 +198,7 @@ impl Masking {
         fields: impl Into<Fields>,
         masking_option: impl Into<StringMaskingOption>,
     ) {
-        self.response_cookie_mask = Some(GenericMask::new(fields.into(), masking_option.into()));
+        self.response_cookie_mask = GenericMask::new(fields.into(), masking_option.into());
     }
 
     /// with_response_header_mask will mask the specified response headers with an optional mask string.
@@ -261,7 +254,7 @@ impl Masking {
         fields: impl Into<Fields>,
         masking_option: impl Into<StringMaskingOption>,
     ) {
-        self.response_header_mask = Some(GenericMask::new(fields.into(), masking_option.into()));
+        self.response_header_mask = GenericMask::new(fields.into(), masking_option.into());
     }
 
     /// with_request_cookie_mask will mask the specified request cookies with an optional mask string.
@@ -317,7 +310,7 @@ impl Masking {
         fields: impl Into<Fields>,
         masking_option: impl Into<StringMaskingOption>,
     ) {
-        self.request_cookie_mask = Some(GenericMask::new(fields.into(), masking_option.into()));
+        self.request_cookie_mask = GenericMask::new(fields.into(), masking_option.into());
     }
 
     /// with_request_field_mask_string will mask the specified request body fields with an optional mask.

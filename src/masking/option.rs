@@ -73,11 +73,11 @@ impl From<HashMap<&str, &str>> for StringMaskingOption {
 }
 
 impl StringMaskingOption {
-    pub(crate) fn get_mask_replacement<'a, 'b>(
-        &'a self,
-        field: &'b str,
+    pub(crate) fn get_mask_replacement<'a>(
+        &self,
+        field: &'a str,
         maybe_index: Option<usize>,
-    ) -> &'a str {
+    ) -> &str {
         match self {
             Self::None => DEFAULT_STRING_MASK,
             Self::SingleMask(mask) => mask,

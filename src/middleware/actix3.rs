@@ -1,13 +1,15 @@
-use std::sync::{Arc, RwLock};
-
-use crate::SpeakeasySdk;
+mod request_response_impl;
 
 pub mod request;
 pub mod response;
 
+use std::sync::{Arc, RwLock};
+
+use crate::SpeakeasySdk;
+
 pub struct Middleware {
     pub request_capture: request::SpeakeasySdk,
-    pub response_capture: request::SpeakeasySdk,
+    pub response_capture: response::SpeakeasySdk,
 }
 
 impl Middleware {
@@ -16,7 +18,7 @@ impl Middleware {
 
         Self {
             request_capture: request::SpeakeasySdk::new(global.clone()),
-            response_capture: request::SpeakeasySdk::new(global.clone()),
+            response_capture: response::SpeakeasySdk::new(global.clone()),
         }
     }
 }

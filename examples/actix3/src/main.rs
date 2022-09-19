@@ -1,13 +1,28 @@
-use actix_web::{dev::Service, web, App, HttpServer};
-use futures_util::FutureExt as _;
+use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use speakeasy_rust_sdk::{
     middleware::actix3::Middleware, Config, SpeakeasySdk, StringMaskingOption,
 };
 
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+struct Person {
+    name: String,
+    number: i32,
+}
+
+#[get("/hello/{name}")]
+async fn greet(name: web::Path<String>) -> impl Responder {
+    format!("Hello {name}!")
+}
+
+#[post("/")]
+async fn index(item: web::Json<Person>) -> HttpResponse {
+    println!("model: {:?}", &item);
+    HttpResponse::Ok().json(item.0)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
-
     log::info!("starting HTTP server at http://localhost:8080");
 
     HttpServer::new(|| {
@@ -38,26 +53,13 @@ async fn main() -> std::io::Result<()> {
         sdk.masking
             .with_response_field_mask_string("secret", StringMaskingOption::default());
 
-        log::info!("starting HTTP server at http://localhost:8080");
-
         let speakeasy_middleware = Middleware::new(sdk);
 
         App::new()
             .wrap(speakeasy_middleware.request_capture)
             .wrap(speakeasy_middleware.response_capture)
-            .wrap_fn(|req, srv| {
-                println!("Hi from start. You requested: {}", req.path());
-
-                srv.call(req).map(|res| {
-                    println!("Hi from response");
-                    res
-                })
-            })
-            .service(
-                web::resource("/").to(|| async {
-                    "Hello, middleware! Check the console where the server is run."
-                }),
-            )
+            .service(greet)
+            .service(index)
     })
     .bind(("127.0.0.1", 8080))?
     .run()

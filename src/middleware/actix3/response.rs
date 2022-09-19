@@ -90,7 +90,9 @@ where
         let res = futures::ready!(self.project().fut.poll(cx));
 
         Poll::Ready(res.map(|res| {
-            res.map_body(move |_, body| {
+            res.map_body(move |head, body| {
+                println!("HEAD: {:?}", head);
+
                 ResponseBody::Body(BodyLogger {
                     body,
                     body_accum: BytesMut::new(),

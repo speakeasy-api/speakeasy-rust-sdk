@@ -21,10 +21,8 @@ pub(crate) enum BodyCapture {
 #[derive(Debug, Clone)]
 pub(crate) struct GenericRequest {
     pub(crate) method: String,
-    pub(crate) host: Option<String>,
     pub(crate) hostname: Option<String>,
-    pub(crate) full_url: String,
-    pub(crate) url: Option<String>,
+    pub(crate) url: String,
     pub(crate) protocol: Option<String>,
     pub(crate) http_version: Version,
     pub(crate) headers: HeaderMap,

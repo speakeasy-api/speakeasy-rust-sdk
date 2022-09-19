@@ -46,7 +46,7 @@ impl HarBuilder {
                     version: env!("CARGO_PKG_VERSION").to_string(),
                     ..Default::default()
                 },
-                comment: Some(format!("request capture for {}", &self.request.full_url)),
+                comment: Some(format!("request capture for {}", &self.request.url)),
                 entries: vec![HarEntry {
                     started_date_time: start_time.to_rfc3339(),
                     time: Utc::now()
@@ -74,7 +74,7 @@ impl HarBuilder {
     fn build_request(&self, masking: &Masking) -> HarRequest {
         HarRequest {
             method: self.request.method.clone(),
-            url: self.request.full_url.clone(),
+            url: self.request.url.clone(),
             http_version: format!("{:?}", self.request.http_version),
             cookies: self.build_request_cookies(&masking.request_cookie_mask),
             headers: self.build_request_headers(&masking.request_header_mask),
@@ -139,7 +139,7 @@ impl HarBuilder {
         &self,
         query_string_mask: &GenericMask<QueryStringMask>,
     ) -> Vec<QueryString> {
-        if let Ok(url) = url::Url::parse(&self.request.full_url) {
+        if let Ok(url) = url::Url::parse(&self.request.url) {
             url.query_pairs()
                 .map(|(name, value)| QueryString {
                     name: name.to_string(),

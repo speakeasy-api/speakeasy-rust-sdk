@@ -6,9 +6,14 @@ use std::task::{Context, Poll};
 
 use actix3::web::BytesMut;
 use actix3::{dev::ServiceRequest, dev::ServiceResponse, Error, HttpMessage};
+use actix_http::h1::Payload;
+use actix_http::http::HeaderName;
 use actix_service::{Service, Transform};
 use futures::future::{ok, Future, Ready};
 use futures::stream::StreamExt;
+use futures::Stream;
+use http::header::CONTENT_LENGTH;
+use http::HeaderValue;
 
 #[derive(Clone)]
 pub struct SpeakeasySdk {
@@ -68,15 +73,33 @@ where
 
         Box::pin(async move {
             let mut body = BytesMut::new();
+
+            let headers = req.headers();
+            headers.get(CONTENT_LENGTH).map(|v| {
+                let len = v.to_str().unwrap().parse::<usize>().unwrap();
+                println!("Content-Length: {}", len);
+                body.reserve(len);
+            });
+
             let mut stream = req.take_payload();
+
             while let Some(chunk) = stream.next().await {
                 body.extend_from_slice(&chunk?);
             }
 
             println!("request body: {:?}", body);
-            let res = svc.call(req).await?;
 
-            println!("response: {:?}", res.headers());
+            // put the payload back into the ServiceRequest
+            let (_sender, mut payload) = Payload::create(true);
+            payload.unread_data(body.freeze());
+            req.set_payload(payload.into());
+
+            let hn = HeaderName::from_static("speakeasy-request-id");
+
+            let mut res = svc.call(req).await?;
+            res.headers_mut()
+                .insert(hn, HeaderValue::from_str("123").unwrap());
+
             Ok(res)
         })
     }

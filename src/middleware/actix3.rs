@@ -4,22 +4,18 @@ pub mod request;
 pub mod response;
 
 use actix_http::http::HeaderName;
-use std::collections::HashMap;
 use tokio02::sync::mpsc::Receiver;
 
-use crate::{generic_http::GenericRequest, har_builder::HarBuilder, SpeakeasySdk};
-
-use super::{MiddlewareMessage, RequestId};
+use super::{MiddlewareMessage, State};
+use crate::SpeakeasySdk;
 
 pub(crate) fn speakeasy_header_name() -> HeaderName {
     HeaderName::from_static("speakeasy-request-id")
 }
 
 pub struct Middleware {
-    sdk: SpeakeasySdk,
-    requests: HashMap<RequestId, GenericRequest>,
+    state: State,
     receiver: Receiver<MiddlewareMessage>,
-
     pub request_capture: request::SpeakeasySdk,
     pub response_capture: response::SpeakeasySdk,
 }
@@ -29,8 +25,7 @@ impl Middleware {
         let (sender, receiver) = tokio02::sync::mpsc::channel(100);
 
         Self {
-            sdk,
-            requests: HashMap::new(),
+            state: State::new(sdk),
             receiver,
             request_capture: request::SpeakeasySdk::new(sender.clone()),
             response_capture: response::SpeakeasySdk::new(sender),
@@ -38,41 +33,12 @@ impl Middleware {
     }
 
     pub fn start(self) -> (request::SpeakeasySdk, response::SpeakeasySdk) {
-        let mut requests = self.requests;
         let mut receiver = self.receiver;
-        let masking = self.sdk.masking.clone();
+        let mut state = self.state;
 
         tokio02::spawn(async move {
             while let Some(msg) = receiver.recv().await {
-                match msg {
-                    MiddlewareMessage::Request {
-                        request_id,
-                        request,
-                    } => {
-                        log::debug!(
-                            "request received id: {:?}, request: {:?}",
-                            &request_id,
-                            &request
-                        );
-                        requests.insert(request_id.clone(), request);
-                    }
-                    MiddlewareMessage::Response {
-                        request_id,
-                        response,
-                    } => {
-                        if let Some(request) = requests.remove(&request_id) {
-                            log::debug!(
-                                "response received, request_id: {:?}, request: {:?}, response: {:?}",
-                                &request_id,
-                                &request,
-                                &response
-                            );
-
-                            let har = HarBuilder::new(request, response).build(&masking);
-                            println!("HAR BUILT: {:#?}", har);
-                        }
-                    }
-                }
+                state.handle_middleware_message(msg);
             }
         });
 

@@ -1,5 +1,5 @@
 use super::{fields::FieldsSearchMap, Fields, StringMaskingOption};
-use std::marker::PhantomData;
+use std::{collections::HashMap, marker::PhantomData};
 
 #[derive(Debug, Clone, Default)]
 pub struct QueryStringMask;
@@ -27,6 +27,11 @@ impl<T> GenericMask<T> {
             None => value.to_string(),
         }
     }
+
+    #[allow(dead_code)]
+    pub(crate) fn is_empty(&self) -> bool {
+        self.0.is_none()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -52,5 +57,30 @@ impl<T> GenericMaskInner<T> {
         } else {
             value
         }
+    }
+}
+
+impl<T> From<GenericMask<T>> for HashMap<String, String> {
+    fn from(mask: GenericMask<T>) -> Self {
+        match mask.0 {
+            Some(inner) => inner.into(),
+            None => HashMap::new(),
+        }
+    }
+}
+
+impl<T> From<GenericMaskInner<T>> for HashMap<String, String> {
+    fn from(mask: GenericMaskInner<T>) -> Self {
+        mask.fields
+            .into_iter()
+            .map(|(field, index)| {
+                let value = mask
+                    .mask_option
+                    .get_mask_replacement(&field, index)
+                    .to_string();
+
+                (field, value)
+            })
+            .collect()
     }
 }

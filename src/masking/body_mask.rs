@@ -51,6 +51,12 @@ impl<T> BodyMaskInner<T> {
 }
 
 impl<T: Default> BodyMask<T> {
+    /// Checks if the masking is empty (not initialized)
+    #[allow(dead_code)]
+    pub(crate) fn is_empty(&self) -> bool {
+        self.string_masks.is_none() && self.number_masks.is_none()
+    }
+
     /// Creates a BodyMask from a list of string fields to mask
     /// errors if there is a probably creating the Regex
     pub(crate) fn set_string_field_masks(
@@ -170,8 +176,6 @@ impl<T: Default> BodyMask<T> {
 
         body.to_string()
     }
-
-    // pub(crate) fn set_string_field_names(&self)
 }
 
 #[cfg(test)]

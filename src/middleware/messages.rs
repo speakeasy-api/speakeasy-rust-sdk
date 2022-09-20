@@ -20,6 +20,7 @@ pub enum MiddlewareMessage {
 }
 
 #[derive(Debug)]
+#[allow(clippy::enum_variant_names)]
 pub enum ControllerMessage {
     SetMasking {
         request_id: RequestId,
@@ -28,5 +29,9 @@ pub enum ControllerMessage {
     SetPathHint {
         request_id: RequestId,
         path_hint: String,
+    },
+    SetCustomerId {
+        request_id: RequestId,
+        customer_id: String,
     },
 }

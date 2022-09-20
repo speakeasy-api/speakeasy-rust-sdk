@@ -37,6 +37,12 @@ impl State {
             } => {
                 self.path_hints.insert(request_id, path_hint);
             }
+            ControllerMessage::SetCustomerId {
+                request_id,
+                customer_id,
+            } => {
+                self.customer_ids.insert(request_id, customer_id);
+            }
         }
     }
 
@@ -78,6 +84,19 @@ impl Controller {
                 ControllerMessage::SetMasking {
                     request_id: self.request_id.clone(),
                     masking: Box::new(masking),
+                },
+            ))
+            .await
+            .unwrap();
+    }
+
+    pub async fn set_customer_id(&self, customer_id: String) {
+        self.sender
+            .clone()
+            .send(MiddlewareMessage::ControllerMessage(
+                ControllerMessage::SetCustomerId {
+                    request_id: self.request_id.clone(),
+                    customer_id,
                 },
             ))
             .await

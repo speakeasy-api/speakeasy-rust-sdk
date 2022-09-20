@@ -47,6 +47,9 @@ async fn use_controller(item: web::Json<Person>, req: HttpRequest) -> HttpRespon
 
     controller.set_path_hint("/use_controller/*").await;
     controller.set_masking(masking).await;
+    controller
+        .set_customer_id("123customer_id".to_string())
+        .await;
 
     HttpResponse::Ok().json(item.0)
 }

@@ -8,23 +8,15 @@ use super::RequestId;
 #[doc(hidden)]
 #[derive(Debug)]
 pub enum MiddlewareMessage {
-    Request(RequestMessage),
-    Response(ResponseMessage),
-    ControllerMessage(ControllerMessage),
-}
-
-#[doc(hidden)]
-#[derive(Debug)]
-pub struct RequestMessage {
-    pub(crate) request_id: RequestId,
-    pub(crate) request: GenericRequest,
-}
-
-#[doc(hidden)]
-#[derive(Debug)]
-pub struct ResponseMessage {
-    pub(crate) request_id: RequestId,
-    pub(crate) response: GenericResponse,
+    Request {
+        request_id: RequestId,
+        request: GenericRequest,
+    },
+    Response {
+        request_id: RequestId,
+        response: GenericResponse,
+    },
+    ControllerMessage(Box<ControllerMessage>),
 }
 
 #[derive(Debug)]

@@ -18,7 +18,6 @@ use http::{header::CONTENT_LENGTH, HeaderValue};
 use tokio02::sync::mpsc::Sender;
 
 use crate::generic_http::{BodyCapture, GenericRequest};
-use crate::middleware::messages::RequestMessage;
 use crate::middleware::{speakeasy_header_name, RequestId, MAX_SIZE};
 use crate::MiddlewareController;
 

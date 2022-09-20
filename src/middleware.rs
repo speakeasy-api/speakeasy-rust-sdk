@@ -7,7 +7,7 @@ use crate::{generic_http::GenericRequest, har_builder::HarBuilder, SpeakeasySdk}
 use actix_http::http::HeaderName;
 use std::collections::HashMap;
 
-use self::messages::{MiddlewareMessage, RequestMessage, ResponseMessage};
+use self::messages::MiddlewareMessage;
 
 // 1MB
 pub(crate) const MAX_SIZE: usize = 1024 * 1024;
@@ -37,10 +37,10 @@ impl State {
 
     pub(crate) fn handle_middleware_message(&mut self, msg: MiddlewareMessage) {
         match msg {
-            MiddlewareMessage::Request(RequestMessage {
+            MiddlewareMessage::Request {
                 request_id,
                 request,
-            }) => {
+            } => {
                 log::debug!(
                     "request received id: {:?}, request: {:?}",
                     &request_id,
@@ -48,10 +48,10 @@ impl State {
                 );
                 self.requests.insert(request_id, request);
             }
-            MiddlewareMessage::Response(ResponseMessage {
+            MiddlewareMessage::Response {
                 request_id,
                 response,
-            }) => {
+            } => {
                 if let Some(request) = self.requests.remove(&request_id) {
                     log::debug!(
                         "response received, request_id: {:?}, request: {:?}, response: {:?}",
@@ -74,7 +74,7 @@ impl State {
                 }
             }
             MiddlewareMessage::ControllerMessage(msg) => {
-                self.controller.handle_message(msg);
+                self.controller.handle_message(*msg);
             }
         }
     }

@@ -8,18 +8,14 @@ use crate::{
     har_builder::HarBuilder,
     SpeakeasySdk,
 };
-use http::{header::InvalidHeaderValue, uri::InvalidUri, HeaderValue, Uri};
+use http::{header::InvalidHeaderValue, HeaderValue, Uri};
 use log::{debug, error};
 use once_cell::sync::Lazy;
 use speakeasy_protos::ingest::{ingest_service_client::IngestServiceClient, IngestRequest};
 use std::{collections::HashMap, str::FromStr};
 use thiserror::Error;
 
-use tonic03::{
-    metadata::{errors::InvalidMetadataValue, MetadataValue},
-    transport::Error as TonicError,
-    Request,
-};
+use tonic03::{transport::Error as TonicError, Request};
 
 use self::messages::MiddlewareMessage;
 
@@ -53,7 +49,7 @@ pub enum Error {
     #[error("error while serializing HAR: {0}")]
     HarSerializeError(#[from] serde_json::Error),
     #[error("invalid server address {0}")]
-    InvalidServerError(InvalidUri),
+    InvalidServerError(String),
     #[error("unable to connect to server {0}")]
     ConnectionError(TonicError),
     #[error("invalid api key {0}")]
@@ -156,34 +152,46 @@ impl State {
 }
 
 async fn send(request: IngestRequest, api_key: String) -> Result<(), Error> {
-    let https_connector = hyper_openssl::HttpsConnector::new().unwrap();
+    // NOTE: Using hyper directly as there seems to be a bug with tonic v0.3 throwing
+    // an error from rustls. When making the middleware for actix4 we can hopefully
+    // avoid doing this and just use the client directly from tonic.
+    let insecure_client = hyper::Client::builder().http2_only(true).build_http();
 
     let client = hyper::Client::builder()
         .http2_only(true)
-        .build(https_connector);
+        .build(hyper_openssl::HttpsConnector::new().expect("Need OpenSSL"));
 
     let uri = hyper::Uri::from_str(&SPEAKEASY_SERVER_URL).unwrap();
     let token = HeaderValue::from_str(&api_key).map_err(Error::InvalidApiKey)?;
 
-    // Hyper's client requires that requests contain full Uris include a scheme and
-    // an authority. Tonic's transport will handle this for you but when using the client
-    // manually you need ensure the uri's are set correctly.
+    let authority = uri
+        .authority()
+        .ok_or_else(|| Error::InvalidServerError("authority".to_string()))?;
+
     let add_origin = tower::service_fn(|mut req: hyper::Request<tonic03::body::BoxBody>| {
         let uri = Uri::builder()
             .scheme(uri.scheme().unwrap().clone())
-            .authority(uri.authority().unwrap().clone())
-            .path_and_query(req.uri().path_and_query().unwrap().clone())
+            .authority(authority.clone())
+            .path_and_query(
+                req.uri()
+                    .path_and_query()
+                    .expect("path and query always present")
+                    .clone(),
+            )
             .build()
             .unwrap();
 
         *req.uri_mut() = uri;
         req.headers_mut().insert("x-api-key", token.clone());
 
-        client.request(req)
+        if *SPEAKEASY_SERVER_SECURE {
+            client.request(req)
+        } else {
+            insecure_client.request(req)
+        }
     });
 
     let mut client = IngestServiceClient::new(add_origin);
-
     let request = Request::new(request);
 
     if let Err(error) = client.ingest(request).await {

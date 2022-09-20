@@ -14,7 +14,7 @@ use futures::{
     future::{ok, Future, Ready},
     stream::StreamExt,
 };
-use http::{header::CONTENT_LENGTH, HeaderValue};
+use http::header::CONTENT_LENGTH;
 use log::error;
 use tokio02::sync::mpsc::Sender;
 

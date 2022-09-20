@@ -8,12 +8,32 @@ use crate::{
     har_builder::HarBuilder,
     SpeakeasySdk,
 };
+use http::uri::InvalidUri;
 use log::{debug, error};
-use speakeasy_protos::ingest::IngestRequest;
+use once_cell::sync::Lazy;
+use speakeasy_protos::ingest::{ingest_service_client::IngestServiceClient, IngestRequest};
 use std::collections::HashMap;
 use thiserror::Error;
 
+use tonic03::{
+    metadata::{errors::InvalidMetadataValue, MetadataValue},
+    transport::{Channel, ClientTlsConfig, Endpoint, Error as TonicError},
+    Request,
+};
+
 use self::messages::MiddlewareMessage;
+
+static SPEAKEASY_SERVER_URL: Lazy<String> = Lazy::new(|| {
+    std::env::var("SPEAKEASY_SERVER_URL")
+        .unwrap_or_else(|_| "grpc.prod.speakeasyapi.dev:443".to_string())
+});
+
+static SPEAKEASY_SERVER_SECURE: Lazy<bool> = Lazy::new(|| {
+    !matches!(
+        std::env::var("SPEAKEASY_SERVER_SECURE").as_deref(),
+        Ok("false")
+    )
+});
 
 // 1MB
 pub(crate) const MAX_SIZE: usize = 1024 * 1024;
@@ -22,6 +42,14 @@ pub(crate) const MAX_SIZE: usize = 1024 * 1024;
 pub enum Error {
     #[error("error while serializing HAR: {0}")]
     HarSerializeError(#[from] serde_json::Error),
+    #[error("invalid server address {0}")]
+    InvalidServerError(InvalidUri),
+    #[error("unable to connect to server {0}")]
+    ConnectionError(TonicError),
+    #[error("invalid api key {0}")]
+    InvalidApiKey(InvalidMetadataValue),
+    #[error("invalid tls {0}")]
+    InvalidTls(TonicError),
 }
 
 #[doc(hidden)]
@@ -104,17 +132,52 @@ impl State {
             .get_customer_id(&request_id)
             .unwrap_or_default();
 
-        let ingest = IngestRequest {
-            har: har_json,
-            path_hint,
-            api_id: config.api_id,
-            version_id: config.version_id,
-            customer_id,
-            masking_metadata: None,
-        };
+        tokio02::task::spawn(async move {
+            let ingest = IngestRequest {
+                har: har_json,
+                path_hint,
+                api_id: config.api_id,
+                version_id: config.version_id,
+                customer_id,
+                masking_metadata: None,
+            };
+
+            if let Err(error) = send(ingest, config.api_key).await {
+                error!("Failed to send HAR to Speakeasy: {:#?}", error);
+            }
+        });
 
         Ok(())
     }
+}
+
+async fn send(request: IngestRequest, api_key: String) -> Result<(), Error> {
+    let endpoint: Endpoint =
+        Channel::from_shared(&**SPEAKEASY_SERVER_URL).map_err(Error::InvalidServerError)?;
+
+    let endpoint = if *SPEAKEASY_SERVER_SECURE {
+        let tls = ClientTlsConfig::new().domain_name(SPEAKEASY_SERVER_URL.as_str());
+        endpoint.tls_config(tls).map_err(Error::InvalidTls)?
+    } else {
+        endpoint
+    };
+
+    let channel = endpoint.connect().await.map_err(Error::ConnectionError)?;
+
+    let token = MetadataValue::from_str(&api_key).map_err(Error::InvalidApiKey)?;
+
+    let mut client = IngestServiceClient::with_interceptor(channel, move |mut req: Request<()>| {
+        req.metadata_mut().insert("x-api-key", token.clone());
+        Ok(req)
+    });
+
+    let request = Request::new(request);
+
+    if let Err(error) = client.ingest(request).await {
+        error!("Failed to send HAR to Speakeasy: {:#?}", error);
+    }
+
+    Ok(())
 }
 
 // PUBLIC

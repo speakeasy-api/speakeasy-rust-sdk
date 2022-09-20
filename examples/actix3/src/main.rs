@@ -24,7 +24,7 @@ async fn index(item: web::Json<Person>) -> HttpResponse {
 
 #[post("/upload")]
 async fn upload(item: web::Bytes) -> impl Responder {
-    println!("bytes: {:?}", item.len());
+    println!("bytes length: {:?}", item.len());
     use std::{fs::File, io::Write};
 
     let mut file = File::create("uploads/copied.png").unwrap();
@@ -35,6 +35,8 @@ async fn upload(item: web::Bytes) -> impl Responder {
 
 #[post("/use_controller")]
 async fn use_controller(item: web::Json<Person>, req: HttpRequest) -> HttpResponse {
+    println!("json: {:?}", &item);
+
     let ext = req.head().extensions();
     let controller = ext.get::<MiddlewareController>().unwrap();
 
@@ -46,7 +48,6 @@ async fn use_controller(item: web::Json<Person>, req: HttpRequest) -> HttpRespon
     controller.set_path_hint("/use_controller/*").await;
     controller.set_masking(masking).await;
 
-    println!("json: {:?}", &item);
     HttpResponse::Ok().json(item.0)
 }
 
@@ -84,7 +85,7 @@ async fn main() -> std::io::Result<()> {
             .with_response_field_mask_string("secret", StringMaskingOption::default());
 
         let speakeasy_middleware = Middleware::new(sdk);
-        let (request_capture, response_capture) = speakeasy_middleware.start();
+        let (request_capture, response_capture) = speakeasy_middleware.init();
 
         App::new()
             .app_data(web::PayloadConfig::new(3_145_728))

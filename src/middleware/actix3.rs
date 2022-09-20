@@ -27,7 +27,7 @@ impl Middleware {
         }
     }
 
-    pub fn start(self) -> (request::SpeakeasySdk, response::SpeakeasySdk) {
+    pub fn init(self) -> (request::SpeakeasySdk, response::SpeakeasySdk) {
         let mut receiver = self.receiver;
         let mut state = self.state;
 

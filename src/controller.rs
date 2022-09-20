@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 
-use super::{
-    messages::{ControllerMessage, MiddlewareMessage},
-    RequestId,
+use crate::{
+    middleware::{
+        messages::{ControllerMessage, MiddlewareMessage},
+        RequestId,
+    },
+    path_hint, Masking,
 };
-use crate::{path_hint, Masking};
 use tokio02::sync::mpsc::Sender;
 
 #[derive(Debug)]

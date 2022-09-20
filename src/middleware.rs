@@ -1,9 +1,8 @@
-pub(crate) mod controller;
 pub(crate) mod messages;
 
 mod request_id;
 
-use crate::{generic_http::GenericRequest, har_builder::HarBuilder, SpeakeasySdk};
+use crate::{controller, generic_http::GenericRequest, har_builder::HarBuilder, SpeakeasySdk};
 use actix_http::http::HeaderName;
 use log::debug;
 use std::collections::HashMap;

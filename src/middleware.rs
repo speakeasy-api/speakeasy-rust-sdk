@@ -8,16 +8,16 @@ use crate::{
     har_builder::HarBuilder,
     SpeakeasySdk,
 };
-use http::uri::InvalidUri;
+use http::{header::InvalidHeaderValue, uri::InvalidUri, HeaderValue, Uri};
 use log::{debug, error};
 use once_cell::sync::Lazy;
 use speakeasy_protos::ingest::{ingest_service_client::IngestServiceClient, IngestRequest};
-use std::{collections::HashMap, time::Duration};
+use std::{collections::HashMap, str::FromStr};
 use thiserror::Error;
 
 use tonic03::{
     metadata::{errors::InvalidMetadataValue, MetadataValue},
-    transport::{Channel, ClientTlsConfig, Endpoint, Error as TonicError},
+    transport::Error as TonicError,
     Request,
 };
 
@@ -57,7 +57,7 @@ pub enum Error {
     #[error("unable to connect to server {0}")]
     ConnectionError(TonicError),
     #[error("invalid api key {0}")]
-    InvalidApiKey(InvalidMetadataValue),
+    InvalidApiKey(InvalidHeaderValue),
     #[error("invalid tls {0}")]
     InvalidTls(TonicError),
 }
@@ -156,27 +156,33 @@ impl State {
 }
 
 async fn send(request: IngestRequest, api_key: String) -> Result<(), Error> {
-    let endpoint: Endpoint =
-        Channel::from_shared(&**SPEAKEASY_SERVER_URL).map_err(Error::InvalidServerError)?;
+    let https_connector = hyper_openssl::HttpsConnector::new().unwrap();
 
-    let endpoint = if *SPEAKEASY_SERVER_SECURE {
-        let tls = ClientTlsConfig::new().domain_name(SPEAKEASY_SERVER_URL.as_str());
-        endpoint
-            .tls_config(tls)
-            .map_err(Error::InvalidTls)?
-            .tcp_keepalive(Some(Duration::from_secs(5)))
-    } else {
-        endpoint
-    };
+    let client = hyper::Client::builder()
+        .http2_only(true)
+        .build(https_connector);
 
-    let channel = endpoint.connect().await.map_err(Error::ConnectionError)?;
+    let uri = hyper::Uri::from_str(&SPEAKEASY_SERVER_URL).unwrap();
+    let token = HeaderValue::from_str(&api_key).map_err(Error::InvalidApiKey)?;
 
-    let token = MetadataValue::from_str(&api_key).map_err(Error::InvalidApiKey)?;
+    // Hyper's client requires that requests contain full Uris include a scheme and
+    // an authority. Tonic's transport will handle this for you but when using the client
+    // manually you need ensure the uri's are set correctly.
+    let add_origin = tower::service_fn(|mut req: hyper::Request<tonic03::body::BoxBody>| {
+        let uri = Uri::builder()
+            .scheme(uri.scheme().unwrap().clone())
+            .authority(uri.authority().unwrap().clone())
+            .path_and_query(req.uri().path_and_query().unwrap().clone())
+            .build()
+            .unwrap();
 
-    let mut client = IngestServiceClient::with_interceptor(channel, move |mut req: Request<()>| {
-        req.metadata_mut().insert("x-api-key", token.clone());
-        Ok(req)
+        *req.uri_mut() = uri;
+        req.headers_mut().insert("x-api-key", token.clone());
+
+        client.request(req)
     });
+
+    let mut client = IngestServiceClient::new(add_origin);
 
     let request = Request::new(request);
 

@@ -15,11 +15,12 @@ use futures::{
     stream::StreamExt,
 };
 use http::{header::CONTENT_LENGTH, HeaderValue};
+use log::error;
 use tokio02::sync::mpsc::Sender;
 
 use crate::generic_http::{BodyCapture, GenericRequest};
 use crate::middleware::{speakeasy_header_name, RequestId, MAX_SIZE};
-use crate::MiddlewareController;
+use crate::{path_hint, MiddlewareController};
 
 use super::MiddlewareMessage;
 
@@ -89,6 +90,10 @@ where
 
             let headers = req.headers();
 
+            let path_hint = req
+                .match_pattern()
+                .map(|path_hint| path_hint::normalize(&path_hint));
+
             // attempt to content length from headers
             let content_length = headers
                 .get(CONTENT_LENGTH)
@@ -142,7 +147,7 @@ where
             }
 
             // create a new GenericRequest from the ServiceRequest
-            let generic_request = GenericRequest::new(&req, body);
+            let generic_request = GenericRequest::new(&req, path_hint, body);
 
             if let Err(error) = sender
                 .send(MiddlewareMessage::Request {
@@ -151,10 +156,9 @@ where
                 })
                 .await
             {
-                log::error!(
+                error!(
                     "Failed to send request to channel: {}, id {}",
-                    error,
-                    &request_id
+                    error, &request_id
                 );
             }
 

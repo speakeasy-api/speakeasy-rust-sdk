@@ -4,8 +4,7 @@ use super::{
     messages::{ControllerMessage, MiddlewareMessage},
     RequestId,
 };
-use crate::Masking;
-
+use crate::{path_hint, Masking};
 use tokio02::sync::mpsc::Sender;
 
 #[derive(Debug)]
@@ -26,11 +25,17 @@ impl State {
 
     pub(crate) fn handle_message(&mut self, msg: ControllerMessage) {
         match msg {
-            ControllerMessage::WithMasking {
+            ControllerMessage::SetMasking {
                 request_id,
                 masking,
             } => {
-                self.masks.insert(request_id, masking);
+                self.masks.insert(request_id, *masking);
+            }
+            ControllerMessage::SetPathHint {
+                request_id,
+                path_hint,
+            } => {
+                self.path_hints.insert(request_id, path_hint);
             }
         }
     }
@@ -51,5 +56,31 @@ impl Controller {
         Self { request_id, sender }
     }
 
-    pub fn set_path_hint(&self) {}
+    pub async fn set_path_hint(&self, path_hint: &str) {
+        let path_hint = path_hint::normalize(path_hint);
+
+        self.sender
+            .clone()
+            .send(MiddlewareMessage::ControllerMessage(
+                ControllerMessage::SetPathHint {
+                    request_id: self.request_id.clone(),
+                    path_hint,
+                },
+            ))
+            .await
+            .unwrap();
+    }
+
+    pub async fn set_masking(&self, masking: Masking) {
+        self.sender
+            .clone()
+            .send(MiddlewareMessage::ControllerMessage(
+                ControllerMessage::SetMasking {
+                    request_id: self.request_id.clone(),
+                    masking: Box::new(masking),
+                },
+            ))
+            .await
+            .unwrap();
+    }
 }

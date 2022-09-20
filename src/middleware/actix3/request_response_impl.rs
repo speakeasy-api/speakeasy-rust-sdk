@@ -7,7 +7,7 @@ use actix_http::HttpMessage;
 use chrono::Utc;
 
 impl GenericRequest {
-    pub fn new(request: &ServiceRequest, body: BodyCapture) -> Self {
+    pub fn new(request: &ServiceRequest, path_hint: Option<String>, body: BodyCapture) -> Self {
         // NOTE IMPORTANT: have to get cookies before getting headers or there will be a BorrowMut
         // already borrowed error from actix
         let cookies = get_request_cookies(request);
@@ -23,6 +23,7 @@ impl GenericRequest {
 
         GenericRequest {
             start_time: Utc::now(),
+            path_hint,
             full_url,
             method: request.method().to_string(),
             host,

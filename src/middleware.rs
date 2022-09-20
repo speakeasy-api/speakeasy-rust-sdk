@@ -5,6 +5,7 @@ mod request_id;
 
 use crate::{generic_http::GenericRequest, har_builder::HarBuilder, SpeakeasySdk};
 use actix_http::http::HeaderName;
+use log::debug;
 use std::collections::HashMap;
 
 use self::messages::MiddlewareMessage;
@@ -41,10 +42,9 @@ impl State {
                 request_id,
                 request,
             } => {
-                log::debug!(
+                debug!(
                     "request received id: {:?}, request: {:?}",
-                    &request_id,
-                    &request
+                    &request_id, &request
                 );
                 self.requests.insert(request_id, request);
             }
@@ -53,11 +53,9 @@ impl State {
                 response,
             } => {
                 if let Some(request) = self.requests.remove(&request_id) {
-                    log::debug!(
+                    debug!(
                         "response received, request_id: {:?}, request: {:?}, response: {:?}",
-                        &request_id,
-                        &request,
-                        &response
+                        &request_id, &request, &response
                     );
 
                     let request_specific_masking = self.controller.get_masking(&request_id);
@@ -74,7 +72,7 @@ impl State {
                 }
             }
             MiddlewareMessage::ControllerMessage(msg) => {
-                self.controller.handle_message(*msg);
+                self.controller.handle_message(msg);
             }
         }
     }

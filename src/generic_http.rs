@@ -22,6 +22,7 @@ pub enum BodyCapture {
 #[derive(Debug, Clone)]
 pub struct GenericRequest {
     pub(crate) start_time: DateTime<Utc>,
+    pub(crate) path_hint: Option<String>,
     pub(crate) full_url: Option<url::Url>,
     pub(crate) method: String,
     pub(crate) host: String,

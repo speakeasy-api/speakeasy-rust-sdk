@@ -16,13 +16,17 @@ pub enum MiddlewareMessage {
         request_id: RequestId,
         response: GenericResponse,
     },
-    ControllerMessage(Box<ControllerMessage>),
+    ControllerMessage(ControllerMessage),
 }
 
 #[derive(Debug)]
 pub enum ControllerMessage {
-    WithMasking {
+    SetMasking {
         request_id: RequestId,
-        masking: Masking,
+        masking: Box<Masking>,
+    },
+    SetPathHint {
+        request_id: RequestId,
+        path_hint: String,
     },
 }

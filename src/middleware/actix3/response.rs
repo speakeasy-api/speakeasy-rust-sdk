@@ -87,12 +87,13 @@ where
         let res = futures::ready!(self.project().fut.poll(cx));
 
         Poll::Ready(res.map(|res| {
+            let ext = res.request().head().extensions();
+            let controller = ext.get::<MiddlewareController>().cloned();
+            drop(ext);
+
             let generic_response = GenericResponse::new(&res);
 
-            res.map_body(move |head, body| {
-                let ext = head.extensions();
-                let controller = ext.get::<MiddlewareController>().cloned();
-
+            res.map_body(move |_head, body| {
                 ResponseBody::Body(ResponseWithBodySender {
                     body,
                     generic_response,

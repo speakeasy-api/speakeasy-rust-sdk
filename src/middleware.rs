@@ -12,7 +12,7 @@ use http::uri::InvalidUri;
 use log::{debug, error};
 use once_cell::sync::Lazy;
 use speakeasy_protos::ingest::{ingest_service_client::IngestServiceClient, IngestRequest};
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 use thiserror::Error;
 
 use tonic03::{
@@ -23,16 +23,26 @@ use tonic03::{
 
 use self::messages::MiddlewareMessage;
 
-static SPEAKEASY_SERVER_URL: Lazy<String> = Lazy::new(|| {
-    std::env::var("SPEAKEASY_SERVER_URL")
-        .unwrap_or_else(|_| "grpc.prod.speakeasyapi.dev:443".to_string())
-});
-
 static SPEAKEASY_SERVER_SECURE: Lazy<bool> = Lazy::new(|| {
     !matches!(
         std::env::var("SPEAKEASY_SERVER_SECURE").as_deref(),
         Ok("false")
     )
+});
+
+static SPEAKEASY_SERVER_URL: Lazy<String> = Lazy::new(|| {
+    let domain = std::env::var("SPEAKEASY_SERVER_URL")
+        .unwrap_or_else(|_| "grpc.prod.speakeasyapi.dev:443".to_string());
+
+    if !domain.starts_with("http") {
+        if *SPEAKEASY_SERVER_SECURE {
+            format!("https://{}", domain)
+        } else {
+            format!("http://{}", domain)
+        }
+    } else {
+        domain
+    }
 });
 
 // 1MB
@@ -77,10 +87,7 @@ impl State {
                 request_id,
                 request,
             } => {
-                debug!(
-                    "request received id: {:?}, request: {:?}",
-                    &request_id, &request
-                );
+                debug!("request received id: {:?}", &request_id);
                 self.requests.insert(request_id, request);
             }
             MiddlewareMessage::Response {
@@ -88,10 +95,7 @@ impl State {
                 response,
             } => {
                 if let Some(request) = self.requests.remove(&request_id) {
-                    debug!(
-                        "response received, request_id: {:?}, request: {:?}, response: {:?}",
-                        &request_id, &request, &response
-                    );
+                    debug!("response received, request_id: {:?}", &request_id);
 
                     if let Err(error) = self.build_and_send_har(request_id, request, response) {
                         error!("Failed to send HAR to Speakeasy: {:#?}", error);
@@ -157,7 +161,10 @@ async fn send(request: IngestRequest, api_key: String) -> Result<(), Error> {
 
     let endpoint = if *SPEAKEASY_SERVER_SECURE {
         let tls = ClientTlsConfig::new().domain_name(SPEAKEASY_SERVER_URL.as_str());
-        endpoint.tls_config(tls).map_err(Error::InvalidTls)?
+        endpoint
+            .tls_config(tls)
+            .map_err(Error::InvalidTls)?
+            .tcp_keepalive(Some(Duration::from_secs(5)))
     } else {
         endpoint
     };
@@ -174,7 +181,7 @@ async fn send(request: IngestRequest, api_key: String) -> Result<(), Error> {
     let request = Request::new(request);
 
     if let Err(error) = client.ingest(request).await {
-        error!("Failed to send HAR to Speakeasy: {:#?}", error);
+        error!("Failed to send HAR to Speakeasy: {:?}", error);
     }
 
     Ok(())

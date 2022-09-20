@@ -1,6 +1,6 @@
 use crate::generic_http::{BodyCapture, GenericCookie, GenericRequest, GenericResponse};
 use actix3::dev::{ServiceRequest, ServiceResponse};
-use actix_http::HttpMessage;
+use actix_http2::HttpMessage;
 use chrono::Utc;
 
 impl GenericRequest {

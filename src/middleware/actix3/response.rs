@@ -6,7 +6,7 @@ use std::task::{Context, Poll};
 use actix3::body::{BodySize, MessageBody, ResponseBody};
 use actix3::web::{Bytes, BytesMut};
 use actix3::{dev::ServiceRequest, dev::ServiceResponse, Error};
-use actix_service::{Service, Transform};
+use actix_service1::{Service, Transform};
 use futures::future::{ok, Ready};
 
 use crate::generic_http::{BodyCapture, GenericResponse};

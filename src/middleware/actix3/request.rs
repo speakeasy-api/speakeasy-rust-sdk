@@ -8,8 +8,8 @@ use actix3::{
     web::BytesMut,
     Error, HttpMessage,
 };
-use actix_http::h1::Payload;
-use actix_service::{Service, Transform};
+use actix_http2::h1::Payload;
+use actix_service1::{Service, Transform};
 use futures::{
     future::{ok, Future, Ready},
     stream::StreamExt,

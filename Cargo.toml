@@ -4,7 +4,7 @@ name = "speakeasy-rust-sdk"
 version = "0.1.0"
 
 [features]
-actix3 = ["dep:actix3", "dep:actix-service", "dep:actix-http", "dep:futures", "dep:pin-project", "dep:tokio02"]
+actix3 = ["dep:actix3", "dep:actix-service1", "dep:actix-http2", "dep:futures", "dep:pin-project", "dep:tokio02"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
@@ -30,8 +30,8 @@ log = "0.4.17"
 url = "2.3.1"
 
 # web frameworks 
-actix-http = {version = "2", optional = true}
-actix-service = {version = "1", optional = true}
+actix-http2 = {package = "actix-http", version = "2", optional = true}
+actix-service1 = {package = "actix-service", version = "1", optional = true}
 actix3 = {package = "actix-web", version = "3", optional = true}
 futures = {version = "0.3", optional = true}
 pin-project = {version = "1", optional = true}

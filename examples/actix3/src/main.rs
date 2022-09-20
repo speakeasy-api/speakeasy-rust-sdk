@@ -1,7 +1,7 @@
 use actix_web::{
     get, post,
     web::{self, ReqData},
-    App, HttpRequest, HttpResponse, HttpServer, Responder,
+    App, HttpResponse, HttpServer, Responder,
 };
 use log::info;
 use speakeasy_rust_sdk::{

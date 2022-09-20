@@ -1,36 +1,31 @@
-use actix_web::{App, HttpResponse, HttpServer, Responder};
+use actix_web::{
+    get, post,
+    web::{self, ReqData},
+    App, HttpResponse, HttpServer, Responder,
+};
 use log::info;
 use speakeasy_rust_sdk::{
     middleware::actix3::Middleware, Config, Masking, MiddlewareController, SpeakeasySdk,
     StringMaskingOption,
 };
 
-use paperclip::actix::{
-    api_v2_operation, get, post,
-    web::{self},
-    Apiv2Schema, OpenApiExt,
-};
-
-#[derive(Debug, serde::Serialize, serde::Deserialize, Apiv2Schema)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 struct Person {
     name: String,
     age: i32,
 }
 
-#[api_v2_operation]
 #[get("/hello/{name}")]
 async fn greet(name: web::Path<String>) -> impl Responder {
     format!("Hello {name}!")
 }
 
-#[api_v2_operation]
 #[post("/")]
 async fn index(item: web::Json<Person>) -> HttpResponse {
     println!("json: {:?}", &item);
     HttpResponse::Ok().json(item.0)
 }
 
-#[api_v2_operation]
 #[post("/upload")]
 async fn upload(item: web::Bytes) -> impl Responder {
     println!("bytes length: {:?}", item.len());
@@ -42,11 +37,10 @@ async fn upload(item: web::Bytes) -> impl Responder {
     format!("Uploaded!")
 }
 
-#[api_v2_operation]
 #[post("/use_controller")]
 async fn use_controller(
     item: web::Json<Person>,
-    controller: web::ReqData<MiddlewareController>,
+    controller: ReqData<MiddlewareController>,
 ) -> HttpResponse {
     println!("json: {:?}", &item);
 
@@ -103,7 +97,6 @@ async fn main() -> std::io::Result<()> {
         let (request_capture, response_capture) = speakeasy_middleware.init();
 
         App::new()
-            .wrap_api()
             .app_data(web::PayloadConfig::new(3_145_728))
             .wrap(request_capture)
             .wrap(response_capture)
@@ -111,8 +104,6 @@ async fn main() -> std::io::Result<()> {
             .service(index)
             .service(upload)
             .service(use_controller)
-            .with_json_spec_v3_at("/api/spec/v3")
-            .build()
     })
     .bind(("127.0.0.1", 8080))?
     .run()

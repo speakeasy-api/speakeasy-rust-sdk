@@ -19,7 +19,7 @@ use log::error;
 use tokio02::sync::mpsc::Sender;
 
 use crate::generic_http::{BodyCapture, GenericRequest};
-use crate::middleware::{speakeasy_header_name, RequestId, MAX_SIZE};
+use crate::middleware::{RequestId, MAX_SIZE};
 use crate::{path_hint, MiddlewareController};
 
 use super::MiddlewareMessage;
@@ -167,11 +167,7 @@ where
                 sender.clone(),
             ));
 
-            let mut res = svc.call(req).await?;
-            res.headers_mut().insert(
-                speakeasy_header_name(),
-                HeaderValue::from_str(&request_id).unwrap(),
-            );
+            let res = svc.call(req).await?;
 
             Ok(res)
         })

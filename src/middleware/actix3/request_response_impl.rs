@@ -1,7 +1,4 @@
-use crate::{
-    generic_http::{BodyCapture, GenericCookie, GenericRequest, GenericResponse},
-    middleware::speakeasy_header_name,
-};
+use crate::generic_http::{BodyCapture, GenericCookie, GenericRequest, GenericResponse};
 use actix3::dev::{ServiceRequest, ServiceResponse};
 use actix_http::HttpMessage;
 use chrono::Utc;
@@ -79,7 +76,6 @@ fn get_response_headers<T>(response: &ServiceResponse<T>) -> http::HeaderMap {
     response
         .headers()
         .iter()
-        .filter(|(k, _)| k != &speakeasy_header_name())
         .map(|(k, v)| (k.clone(), v.clone()))
         .collect()
 }

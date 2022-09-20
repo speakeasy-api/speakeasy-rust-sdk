@@ -22,8 +22,8 @@ impl Middleware {
         Self {
             state: State::new(sdk),
             receiver,
-            request_capture: request::SpeakeasySdk::new(sender.clone()),
-            response_capture: response::SpeakeasySdk::new(sender),
+            request_capture: request::SpeakeasySdk::new(sender),
+            response_capture: response::SpeakeasySdk::new(),
         }
     }
 

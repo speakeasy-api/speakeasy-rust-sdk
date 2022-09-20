@@ -105,3 +105,15 @@ impl Controller {
             .unwrap();
     }
 }
+
+// private methods used in middleware
+#[doc(hidden)]
+impl Controller {
+    pub(crate) fn request_id(&self) -> &RequestId {
+        &self.request_id
+    }
+
+    pub(crate) fn sender(&self) -> &Sender<MiddlewareMessage> {
+        &self.sender
+    }
+}

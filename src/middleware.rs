@@ -12,10 +12,6 @@ use self::messages::MiddlewareMessage;
 // 1MB
 pub(crate) const MAX_SIZE: usize = 1024 * 1024;
 
-pub(crate) fn speakeasy_header_name() -> HeaderName {
-    HeaderName::from_static("speakeasy-request-id")
-}
-
 #[doc(hidden)]
 pub type RequestId = request_id::RequestId;
 

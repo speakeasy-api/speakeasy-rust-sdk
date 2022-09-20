@@ -133,13 +133,19 @@ impl State {
             .unwrap_or_default();
 
         tokio02::task::spawn(async move {
+            let masking_metadata = if masking.is_empty() {
+                None
+            } else {
+                Some(masking.into())
+            };
+
             let ingest = IngestRequest {
                 har: har_json,
                 path_hint,
                 api_id: config.api_id,
                 version_id: config.version_id,
                 customer_id,
-                masking_metadata: None,
+                masking_metadata,
             };
 
             if let Err(error) = send(ingest, config.api_key).await {

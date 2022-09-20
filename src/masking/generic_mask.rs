@@ -28,7 +28,6 @@ impl<T> GenericMask<T> {
         }
     }
 
-    #[allow(dead_code)]
     pub(crate) fn is_empty(&self) -> bool {
         self.0.is_none()
     }

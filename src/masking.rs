@@ -587,7 +587,6 @@ impl Masking {
 // private masking functions
 #[doc(hidden)]
 impl Masking {
-    #[allow(dead_code)]
     pub(crate) fn is_empty(&self) -> bool {
         self.query_string_mask.is_empty()
             && self.request_header_mask.is_empty()
@@ -601,13 +600,14 @@ impl Masking {
 
 impl From<Masking> for MaskingMetadata {
     fn from(masking: Masking) -> Self {
-        //TODO: finish if this is what MaskingMetadata should look like
+        let (request_field_masks_string, request_field_masks_number) =
+            masking.request_masks.into_metadata();
 
         MaskingMetadata {
             request_header_masks: masking.request_header_mask.into(),
             request_cookie_masks: masking.request_cookie_mask.into(),
-            request_field_masks_string: HashMap::new(),
-            request_field_masks_number: HashMap::new(),
+            request_field_masks_string,
+            request_field_masks_number,
             response_header_masks: masking.response_header_mask.into(),
             response_cookie_masks: masking.response_cookie_mask.into(),
             response_field_masks_string: HashMap::new(),

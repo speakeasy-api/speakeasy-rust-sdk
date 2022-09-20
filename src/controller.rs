@@ -11,13 +11,13 @@ use crate::{
 use tokio02::sync::mpsc::Sender;
 
 #[derive(Debug)]
-pub struct State {
+pub struct ControllerState {
     customer_ids: HashMap<RequestId, String>,
     path_hints: HashMap<RequestId, String>,
     masks: HashMap<RequestId, Masking>,
 }
 
-impl State {
+impl ControllerState {
     pub fn new() -> Self {
         Self {
             customer_ids: HashMap::new(),
@@ -51,6 +51,14 @@ impl State {
 
     pub(crate) fn get_masking(&mut self, request_id: &RequestId) -> Option<Masking> {
         self.masks.remove(request_id)
+    }
+
+    pub(crate) fn get_path_hint(&mut self, request_id: &RequestId) -> Option<String> {
+        self.path_hints.remove(request_id)
+    }
+
+    pub(crate) fn get_customer_id(&mut self, request_id: &RequestId) -> Option<String> {
+        self.customer_ids.remove(request_id)
     }
 }
 

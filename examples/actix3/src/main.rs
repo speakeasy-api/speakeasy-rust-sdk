@@ -65,14 +65,16 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(|| {
         let config = Config {
-            api_key: "YOUR API KEY HERE".to_string(), // retrieve from Speakeasy API dashboard.
-            api_id: "YOUR API ID HERE".to_string(), // enter a name that you'd like to associate captured requests with.
+            // retrieve from Speakeasy API dashboard.
+            api_key: "YOUR API KEY HERE".to_string(),
+            // enter a name that you'd like to associate captured requests with.
             // This name will show up in the Speakeasy dashboard. e.g. "PetStore" might be a good ApiID for a Pet Store's API.
             // No spaces allowed.
-            version_id: "YOUR VERSION ID HERE".to_string(), // enter a version that you would like to associate captured requests with.
+            api_id: "YOUR API ID HERE".to_string(),
+            // enter a version that you would like to associate captured requests with.
             // The combination of ApiID (name) and VersionID will uniquely identify your requests in the Speakeasy Dashboard.
             // e.g. "v1.0.0". You can have multiple versions for the same ApiID (if running multiple versions of your API)
-            port: 3000, // The port number your express app is listening on (required to build full URLs on non-standard ports)
+            version_id: "YOUR VERSION ID HERE".to_string(),
         };
 
         // Create a new Speakeasy SDK instance

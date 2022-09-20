@@ -1,4 +1,8 @@
-use actix_web::{get, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{
+    get, post,
+    web::{self, ReqData},
+    App, HttpRequest, HttpResponse, HttpServer, Responder,
+};
 use log::info;
 use speakeasy_rust_sdk::{
     middleware::actix3::Middleware, Config, Masking, MiddlewareController, SpeakeasySdk,
@@ -34,11 +38,11 @@ async fn upload(item: web::Bytes) -> impl Responder {
 }
 
 #[post("/use_controller")]
-async fn use_controller(item: web::Json<Person>, req: HttpRequest) -> HttpResponse {
+async fn use_controller(
+    item: web::Json<Person>,
+    controller: ReqData<MiddlewareController>,
+) -> HttpResponse {
     println!("json: {:?}", &item);
-
-    let ext = req.head().extensions();
-    let controller = ext.get::<MiddlewareController>().unwrap();
 
     // create a specific masking for this request/response
     let mut masking = Masking::default();

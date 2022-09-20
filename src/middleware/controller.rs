@@ -51,7 +51,7 @@ impl State {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Controller {
     request_id: RequestId,
     sender: Sender<MiddlewareMessage>,

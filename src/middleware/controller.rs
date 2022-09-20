@@ -1,16 +1,12 @@
 use std::collections::HashMap;
 
+use super::{
+    messages::{ControllerMessage, MiddlewareMessage},
+    RequestId,
+};
 use crate::Masking;
 
-use super::RequestId;
-
-#[derive(Debug)]
-pub(crate) enum Message {
-    WithMasking {
-        request_id: RequestId,
-        masking: Masking,
-    },
-}
+use tokio02::sync::mpsc::Sender;
 
 #[derive(Debug)]
 pub struct State {
@@ -28,9 +24,9 @@ impl State {
         }
     }
 
-    pub(crate) fn handle_message(&mut self, msg: Message) {
+    pub(crate) fn handle_message(&mut self, msg: ControllerMessage) {
         match msg {
-            Message::WithMasking {
+            ControllerMessage::WithMasking {
                 request_id,
                 masking,
             } => {
@@ -44,4 +40,16 @@ impl State {
     }
 }
 
-pub struct Controller {}
+#[derive(Debug)]
+pub struct Controller {
+    request_id: RequestId,
+    sender: Sender<MiddlewareMessage>,
+}
+
+impl Controller {
+    pub fn new(request_id: RequestId, sender: Sender<MiddlewareMessage>) -> Self {
+        Self { request_id, sender }
+    }
+
+    pub fn set_path_hint(&self) {}
+}

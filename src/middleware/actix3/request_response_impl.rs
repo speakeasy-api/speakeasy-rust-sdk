@@ -23,7 +23,6 @@ impl GenericRequest {
 
         GenericRequest {
             start_time: Utc::now(),
-            scheme,
             full_url,
             method: request.method().to_string(),
             host,

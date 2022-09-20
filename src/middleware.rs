@@ -1,15 +1,13 @@
 pub(crate) mod controller;
+pub(crate) mod messages;
+
 mod request_id;
 
+use crate::{generic_http::GenericRequest, har_builder::HarBuilder, SpeakeasySdk};
+use actix_http::http::HeaderName;
 use std::collections::HashMap;
 
-use actix_http::http::HeaderName;
-
-use crate::{
-    generic_http::{GenericRequest, GenericResponse},
-    har_builder::HarBuilder,
-    SpeakeasySdk,
-};
+use self::messages::{MiddlewareMessage, RequestMessage, ResponseMessage};
 
 // 1MB
 pub(crate) const MAX_SIZE: usize = 1024 * 1024;
@@ -18,14 +16,14 @@ pub(crate) fn speakeasy_header_name() -> HeaderName {
     HeaderName::from_static("speakeasy-request-id")
 }
 
-pub(crate) type RequestId = request_id::RequestId;
+#[doc(hidden)]
+pub type RequestId = request_id::RequestId;
 
 #[derive(Debug)]
 pub(crate) struct State {
     sdk: SpeakeasySdk,
     requests: HashMap<RequestId, GenericRequest>,
-    responses: HashMap<RequestId, GenericResponse>,
-    controller_state: controller::State,
+    controller: controller::State,
 }
 
 impl State {
@@ -33,17 +31,16 @@ impl State {
         Self {
             sdk,
             requests: HashMap::new(),
-            responses: HashMap::new(),
-            controller_state: controller::State::new(),
+            controller: controller::State::new(),
         }
     }
 
     pub(crate) fn handle_middleware_message(&mut self, msg: MiddlewareMessage) {
         match msg {
-            MiddlewareMessage::Request {
+            MiddlewareMessage::Request(RequestMessage {
                 request_id,
                 request,
-            } => {
+            }) => {
                 log::debug!(
                     "request received id: {:?}, request: {:?}",
                     &request_id,
@@ -51,10 +48,10 @@ impl State {
                 );
                 self.requests.insert(request_id, request);
             }
-            MiddlewareMessage::Response {
+            MiddlewareMessage::Response(ResponseMessage {
                 request_id,
                 response,
-            } => {
+            }) => {
                 if let Some(request) = self.requests.remove(&request_id) {
                     log::debug!(
                         "response received, request_id: {:?}, request: {:?}, response: {:?}",
@@ -63,7 +60,7 @@ impl State {
                         &response
                     );
 
-                    let request_specific_masking = self.controller_state.get_masking(&request_id);
+                    let request_specific_masking = self.controller.get_masking(&request_id);
 
                     // if mask is found for request, use it, otherwise use global mask
                     let masking = if let Some(masking) = request_specific_masking.as_ref() {
@@ -77,24 +74,13 @@ impl State {
                 }
             }
             MiddlewareMessage::ControllerMessage(msg) => {
-                self.controller_state.handle_message(msg);
+                self.controller.handle_message(msg);
             }
         }
     }
 }
 
-#[derive(Debug)]
-pub(crate) enum MiddlewareMessage {
-    Request {
-        request_id: RequestId,
-        request: GenericRequest,
-    },
-    Response {
-        request_id: RequestId,
-        response: GenericResponse,
-    },
-    ControllerMessage(controller::Message),
-}
+// PUBLIC
 // framework specific middleware
 #[cfg(feature = "actix3")]
 pub mod actix3;

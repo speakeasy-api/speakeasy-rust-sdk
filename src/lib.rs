@@ -9,6 +9,7 @@ pub mod middleware;
 pub type Masking = masking::Masking;
 pub type StringMaskingOption = masking::StringMaskingOption;
 pub type NumberMaskingOption = masking::NumberMaskingOption;
+pub type MiddlewareController = middleware::controller::Controller;
 
 /// Configuration struct for configuring the global speakeasy SDK instance
 #[derive(Debug, Clone)]

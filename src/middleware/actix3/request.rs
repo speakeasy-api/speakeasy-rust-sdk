@@ -18,7 +18,9 @@ use http::{header::CONTENT_LENGTH, HeaderValue};
 use tokio02::sync::mpsc::Sender;
 
 use crate::generic_http::{BodyCapture, GenericRequest};
+use crate::middleware::messages::RequestMessage;
 use crate::middleware::{speakeasy_header_name, RequestId, MAX_SIZE};
+use crate::MiddlewareController;
 
 use super::MiddlewareMessage;
 
@@ -156,6 +158,11 @@ where
                     &request_id
                 );
             }
+
+            req.extensions_mut().insert(MiddlewareController::new(
+                request_id.clone(),
+                sender.clone(),
+            ));
 
             let mut res = svc.call(req).await?;
             res.headers_mut().insert(

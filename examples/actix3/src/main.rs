@@ -1,6 +1,6 @@
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use speakeasy_rust_sdk::{
-    middleware::actix3::Middleware, Config, SpeakeasySdk, StringMaskingOption,
+    middleware::actix3::Middleware, Config, MiddlewareController, SpeakeasySdk, StringMaskingOption,
 };
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -29,6 +29,18 @@ async fn upload(item: web::Bytes) -> impl Responder {
     file.write_all(&item).unwrap();
 
     format!("Uploaded!")
+}
+
+#[post("/custom")]
+async fn custom(item: web::Json<Person>, req: HttpRequest) -> HttpResponse {
+    let controller = req
+        .head()
+        .extensions()
+        .get::<MiddlewareController>()
+        .unwrap();
+
+    println!("json: {:?}", &item);
+    HttpResponse::Ok().json(item.0)
 }
 
 #[actix_web::main]
@@ -68,12 +80,13 @@ async fn main() -> std::io::Result<()> {
         let (request_capture, response_capture) = speakeasy_middleware.start();
 
         App::new()
+            .app_data(web::PayloadConfig::new(3_145_728))
             .wrap(request_capture)
             .wrap(response_capture)
-            .app_data(web::PayloadConfig::new(3_145_728))
             .service(greet)
             .service(index)
             .service(upload)
+            .service(custom)
     })
     .bind(("127.0.0.1", 8080))?
     .run()

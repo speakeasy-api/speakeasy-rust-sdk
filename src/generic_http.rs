@@ -10,7 +10,7 @@ pub(crate) struct GenericCookie {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) enum BodyCapture {
+pub enum BodyCapture {
     // drop if > max, max = 1 * 1024 * 1024;
     Empty,
     Dropped,
@@ -20,9 +20,8 @@ pub(crate) enum BodyCapture {
 /// A generic HTTP request, which can be converted to a HAR request
 /// A generic HTTP request, can be created from a request from a web framework
 #[derive(Debug, Clone)]
-pub(crate) struct GenericRequest {
+pub struct GenericRequest {
     pub(crate) start_time: DateTime<Utc>,
-    pub(crate) scheme: String,
     pub(crate) full_url: Option<url::Url>,
     pub(crate) method: String,
     pub(crate) host: String,
@@ -37,7 +36,7 @@ pub(crate) struct GenericRequest {
 /// A generic HTTP response, which can be converted to a HAR response
 /// A generic HTTP response, can be created from a response from a web framework
 #[derive(Debug, Clone)]
-pub(crate) struct GenericResponse {
+pub struct GenericResponse {
     pub(crate) status: http::StatusCode,
     pub(crate) http_version: Version,
     pub(crate) headers: HeaderMap,

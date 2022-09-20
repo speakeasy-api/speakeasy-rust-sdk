@@ -1,7 +1,7 @@
 use std::{fmt::Display, ops::Deref};
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
-pub(crate) struct RequestId(String);
+pub struct RequestId(String);
 
 impl From<String> for RequestId {
     fn from(s: String) -> Self {

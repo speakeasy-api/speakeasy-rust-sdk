@@ -5,7 +5,7 @@ pub mod response;
 
 use tokio02::sync::mpsc::Receiver;
 
-use super::{MiddlewareMessage, State};
+use super::{messages::MiddlewareMessage, State};
 use crate::SpeakeasySdk;
 
 pub struct Middleware {

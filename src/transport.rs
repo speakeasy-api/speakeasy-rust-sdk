@@ -112,9 +112,8 @@ impl Transport for GrpcClient {
 
 #[cfg(test)]
 mod tests {
-    use har::Har;
-
     use super::*;
+    use har::Har;
 
     #[derive(Debug, Clone)]
     pub struct GrpcMock {}

@@ -1,0 +1,70 @@
+{
+  "log": {
+    "version": "1.2",
+    "creator": {
+      "name": "speakeasy-rust-sdk",
+      "version": "0.1.0"
+    },
+    "entries": [
+      {
+        "startedDateTime": "2020-01-01T00:00:00.000000500Z",
+        "time": 2,
+        "request": {
+          "method": "GET",
+          "url": "http://test.com/test",
+          "httpVersion": "HTTP/1.1",
+          "cookies": [],
+          "headers": [
+            {
+              "name": "Accept-Encoding",
+              "value": "gzip, deflate"
+            },
+            {
+              "name": "Connection",
+              "value": "close"
+            },
+            {
+              "name": "Host",
+              "value": "test.com"
+            }
+          ],
+          "queryString": [],
+          "headersSize": 67,
+          "bodySize": -1
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "cookies": [],
+          "headers": [
+            {
+              "name": "Content-Length",
+              "value": "4"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/octet-stream"
+            }
+          ],
+          "content": {
+            "size": 4,
+            "mimeType": "application/octet-stream",
+            "text": "test"
+          },
+          "redirectURL": "",
+          "headersSize": 59,
+          "bodySize": 4
+        },
+        "cache": {},
+        "timings": {
+          "send": -1,
+          "wait": -1,
+          "receive": -1
+        },
+        "serverIPAddress": "test.com"
+      }
+    ],
+    "comment": "request capture for http://test.com/test"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "captures basic request with nano precision",
+  "fields": {
+    "max_capture_size": 9437184
+  },
+  "args": {
+    "method": "GET",
+    "url": "http://test.com/test",
+    "headers": [
+      { "key": "Host", "values": ["test.com"] },
+      { "key": "Accept-Encoding", "values": ["gzip, deflate"] },
+      { "key": "Connection", "values": ["close"] }
+    ],
+    "request_start_time": "2020-01-01T00:00:00.0000005Z",
+    "elapsed_time": 2,
+    "response_status": 200,
+    "response_body": "test",
+    "response_headers": [
+      { "key": "Content-Type", "values": ["application/octet-stream"] },
+      { "key": "Content-Length", "values": ["4"] }
+    ]
+  }
+}

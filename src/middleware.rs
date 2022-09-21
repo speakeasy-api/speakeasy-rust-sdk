@@ -46,8 +46,6 @@ pub(crate) const MAX_SIZE: usize = 1024 * 1024;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("error while serializing HAR: {0}")]
-    HarSerializeError(#[from] serde_json::Error),
     #[error("invalid server address {0}")]
     InvalidServerError(String),
     #[error("unable to connect to server {0}")]
@@ -124,15 +122,15 @@ impl State {
             .unwrap_or_else(|| self.sdk.masking.clone());
 
         let config = self.sdk.config.clone();
-        let har = HarBuilder::new(request, response).build(&masking);
-        let har_json = serde_json::to_string(&har)?;
-
         let customer_id = self
             .controller_state
             .get_customer_id(&request_id)
             .unwrap_or_default();
 
         tokio02::task::spawn(async move {
+            let har = HarBuilder::new(request, response).build(&masking);
+            let har_json = serde_json::to_string(&har).expect("har will serialize to json");
+
             let masking_metadata = if masking.is_empty() {
                 None
             } else {

@@ -46,5 +46,21 @@ pub struct Config {
     pub version_id: String,
 }
 
+/// Configuration struct for configuring the global speakeasy SDK instance
+#[derive(Debug, Clone)]
+pub(crate) struct RequestConfig {
+    pub api_id: String,
+    pub version_id: String,
+}
+
 /// Speakeasy SDK instance
 pub type SpeakeasySdk = sdk::SpeakeasySdk<GrpcClient>;
+
+impl From<Config> for RequestConfig {
+    fn from(config: Config) -> Self {
+        Self {
+            api_id: config.api_id,
+            version_id: config.version_id,
+        }
+    }
+}

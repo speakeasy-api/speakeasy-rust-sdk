@@ -3,7 +3,7 @@ use crate::{async_runtime, middleware::Error};
 use http::{HeaderValue, Uri};
 use once_cell::sync::Lazy;
 use speakeasy_protos::ingest::{ingest_service_client::IngestServiceClient, IngestRequest};
-use std::str::FromStr;
+use std::{str::FromStr, sync::Arc};
 use tonic03::Request;
 
 pub(crate) static SPEAKEASY_SERVER_SECURE: Lazy<bool> = Lazy::new(|| {
@@ -34,14 +34,16 @@ pub trait Transport {
 
 #[derive(Debug, Clone)]
 pub struct GrpcClient {
-    token: HeaderValue,
+    token: Arc<HeaderValue>,
 }
 
 impl GrpcClient {
     pub(crate) fn new(token: impl AsRef<str>) -> Result<Self, crate::Error> {
         let token = HeaderValue::from_str(token.as_ref()).map_err(crate::Error::InvalidApiKey)?;
 
-        Ok(Self { token })
+        Ok(Self {
+            token: Arc::new(token),
+        })
     }
 }
 
@@ -80,7 +82,8 @@ impl Transport for GrpcClient {
                     .unwrap();
 
                 *req.uri_mut() = uri;
-                req.headers_mut().insert("x-api-key", token.clone());
+                req.headers_mut()
+                    .insert("x-api-key", token.as_ref().clone());
 
                 if *SPEAKEASY_SERVER_SECURE {
                     client.request(req)
@@ -103,3 +106,6 @@ impl Transport for GrpcClient {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {}

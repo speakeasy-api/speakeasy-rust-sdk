@@ -1,4 +1,4 @@
-use crate::{transport::GrpcClient, Config, Error, Masking};
+use crate::{transport::GrpcClient, Config, Error, Masking, RequestConfig};
 
 /// Speakeasy SDK instance
 #[doc(hidden)]
@@ -6,7 +6,7 @@ use crate::{transport::GrpcClient, Config, Error, Masking};
 pub struct SpeakeasySdk<GrpcClient> {
     pub masking: Masking,
 
-    pub(crate) config: Config,
+    pub(crate) config: RequestConfig,
     pub(crate) transport: GrpcClient,
 }
 
@@ -42,7 +42,7 @@ impl SpeakeasySdk<GrpcClient> {
     pub fn try_new(config: Config) -> Result<Self, Error> {
         Ok(Self {
             transport: GrpcClient::new(config.api_key.clone())?,
-            config,
+            config: config.into(),
             masking: Default::default(),
         })
     }

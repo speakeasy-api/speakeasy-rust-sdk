@@ -16,21 +16,20 @@ use futures::{
 };
 use http::{header::CONTENT_LENGTH, HeaderValue};
 use log::error;
-use tokio02::sync::mpsc::Sender;
 
 use crate::generic_http::{BodyCapture, GenericRequest};
 use crate::middleware::{RequestId, MAX_SIZE};
-use crate::{path_hint, MiddlewareController};
+use crate::{path_hint, MiddlewareController, MiddlewareMessageSender};
 
 use super::MiddlewareMessage;
 
 #[derive(Clone)]
 pub struct SpeakeasySdk {
-    sender: Sender<MiddlewareMessage>,
+    sender: MiddlewareMessageSender,
 }
 
 impl SpeakeasySdk {
-    pub(crate) fn new(sender: Sender<MiddlewareMessage>) -> Self {
+    pub(crate) fn new(sender: MiddlewareMessageSender) -> Self {
         Self { sender }
     }
 }
@@ -59,7 +58,7 @@ where
 pub struct SpeakeasySdkMiddleware<S> {
     // This is special: We need this to avoid lifetime issues.
     service: Rc<RefCell<S>>,
-    sender: Sender<MiddlewareMessage>,
+    sender: MiddlewareMessageSender,
 }
 
 impl<S, B> Service for SpeakeasySdkMiddleware<S>

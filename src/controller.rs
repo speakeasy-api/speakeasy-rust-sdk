@@ -5,10 +5,8 @@ use crate::{
         messages::{ControllerMessage, MiddlewareMessage},
         RequestId,
     },
-    path_hint, Masking,
+    path_hint, Masking, MiddlewareMessageSender,
 };
-
-use tokio02::sync::mpsc::Sender;
 
 #[derive(Debug)]
 pub struct ControllerState {
@@ -65,11 +63,11 @@ impl ControllerState {
 #[derive(Debug, Clone)]
 pub struct Controller {
     request_id: RequestId,
-    sender: Sender<MiddlewareMessage>,
+    sender: MiddlewareMessageSender,
 }
 
 impl Controller {
-    pub fn new(request_id: RequestId, sender: Sender<MiddlewareMessage>) -> Self {
+    pub fn new(request_id: RequestId, sender: MiddlewareMessageSender) -> Self {
         Self { request_id, sender }
     }
 
@@ -122,7 +120,7 @@ impl Controller {
         &self.request_id
     }
 
-    pub(crate) fn sender(&self) -> &Sender<MiddlewareMessage> {
+    pub(crate) fn sender(&self) -> &MiddlewareMessageSender {
         &self.sender
     }
 }

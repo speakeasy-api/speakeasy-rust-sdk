@@ -12,6 +12,10 @@ pub type StringMaskingOption = masking::StringMaskingOption;
 pub type NumberMaskingOption = masking::NumberMaskingOption;
 pub type MiddlewareController = controller::Controller;
 
+#[cfg(feature = "tokio02")]
+pub type MiddlewareMessageSender =
+    tokio02::sync::mpsc::Sender<middleware::messages::MiddlewareMessage>;
+
 /// Configuration struct for configuring the global speakeasy SDK instance
 #[derive(Debug, Clone)]
 pub struct Config {

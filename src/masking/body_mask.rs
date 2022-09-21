@@ -221,7 +221,7 @@ mod tests {
     use maplit::hashmap;
     use pretty_assertions::assert_eq;
 
-    impl<T> BodyMask<T> {
+    impl<T: Default> BodyMask<T> {
         /// Create a new BodyMask struct using string_field_names and number_field_names
         /// The regex will be compiled and stored in the struct so it can be used reused, for repeated calls
         pub(crate) fn try_new(

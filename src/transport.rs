@@ -122,7 +122,7 @@ mod tests {
         type Output = (IngestRequest, Har);
 
         fn send(&self, request: IngestRequest) -> Result<Self::Output, super::Error> {
-            let har = Har::from_str(&request.har).unwrap();
+            let har = serde_json::from_str(&request.har).unwrap();
             Ok((request, har))
         }
     }

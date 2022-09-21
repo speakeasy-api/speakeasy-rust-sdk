@@ -111,19 +111,36 @@ impl Transport for GrpcClient {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use har::Har;
 
-    #[derive(Debug, Clone)]
-    pub struct GrpcMock {}
+    #[derive(Debug)]
+    pub struct GrpcMock {
+        pub sender: crate::async_runtime::Sender<Har>,
+    }
 
-    impl Transport for GrpcMock {
-        type Output = (IngestRequest, Har);
+    impl GrpcMock {
+        pub fn new(sender: crate::async_runtime::Sender<Har>) -> Self {
+            Self { sender }
+        }
+    }
+
+    impl Transport for Arc<GrpcMock> {
+        type Output = ();
 
         fn send(&self, request: IngestRequest) -> Result<Self::Output, super::Error> {
+            println!("SENDING!");
+
             let har = serde_json::from_str(&request.har).unwrap();
-            Ok((request, har))
+
+            let mut sender = self.sender.clone();
+
+            async_runtime::spawn_task(async move {
+                sender.send(har).await.unwrap();
+            });
+
+            Ok(())
         }
     }
 }

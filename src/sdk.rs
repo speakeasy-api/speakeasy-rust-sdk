@@ -25,11 +25,10 @@ impl SpeakeasySdk<GrpcClient> {
     ///     version_id: "YOUR VERSION ID HERE".to_string(), // enter a version that you would like to associate captured requests with.
     ///     // The combination of ApiID (name) and VersionID will uniquely identify your requests in the Speakeasy Dashboard.
     ///     // e.g. "v1.0.0". You can have multiple versions for the same ApiID (if running multiple versions of your API)
-    ///     port: 3000,                        // The port number your express app is listening on (required to build full URLs on non-standard ports)
     /// };
     ///
     /// // Create a new Speakeasy SDK instance
-    /// let mut sdk = SpeakeasySdk::new(config);
+    /// let mut sdk = SpeakeasySdk::try_new(config).expect("valid API key");
     ///
     /// // Configure masking for query
     /// // see [Masking::with_query_string_mask] for more options

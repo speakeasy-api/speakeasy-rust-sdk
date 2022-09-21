@@ -1,21 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
-use actix3::{
-    client::{Client, ClientRequest},
-    rt::Arbiter,
-    rt::System,
-    test, web, App, HttpServer,
-};
-#[cfg(test)]
-use actix3::{get, HttpResponse, Responder};
+use actix3::client::Client;
 use serde::{Deserialize, Serialize};
-use tokio02 as tokio;
-use tokio02::runtime::Runtime;
-
-use crate::{
-    async_runtime, middleware::actix3::Middleware, sdk::SpeakeasySdk, transport::tests::GrpcMock,
-    Config, StringMaskingOption,
-};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Fields {
@@ -51,20 +37,9 @@ pub struct TestInput {
     args: Args,
 }
 
-impl SpeakeasySdk<Arc<GrpcMock>> {
-    fn new(config: Config, transport: Arc<GrpcMock>) -> Self {
-        Self {
-            transport,
-            config: config.into(),
-            masking: Default::default(),
-        }
-    }
-}
-
 #[test]
 fn integration_tests() {
     let mut system = actix_rt::System::new("test");
-    let arbiter = Arbiter::new();
 
     system.block_on(async {
         let tests_data_folder = format!("{}/tests/testdata", env!("CARGO_MANIFEST_DIR"));
@@ -100,13 +75,7 @@ fn integration_tests() {
             }
 
             client = client.header("x-speakeasy-test-name", &*test_name);
-            client.send().await;
-
-            // if let Some(har) = receiver.recv().await {
-            //     println!("HAR {:#?}", har);
-            // }
-
-            // assert!(grpc_mock.lock().unwrap().response.is_some());
+            client.send().await.unwrap();
         }
     });
 }

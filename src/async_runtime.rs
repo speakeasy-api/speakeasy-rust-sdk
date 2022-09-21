@@ -23,20 +23,3 @@ where
 pub fn channel<T>(buffer: usize) -> (Sender<T>, Receiver<T>) {
     tokio02::sync::mpsc::channel(buffer)
 }
-
-#[cfg(test)]
-pub(crate) mod oneshot {
-    #[cfg(feature = "tokio02")]
-    #[doc(hidden)]
-    pub(crate) type Sender<T> = tokio02::sync::oneshot::Sender<T>;
-
-    #[cfg(feature = "tokio02")]
-    #[doc(hidden)]
-    pub(crate) type Receiver<T> = tokio02::sync::oneshot::Receiver<T>;
-
-    #[cfg(feature = "tokio02")]
-    #[doc(hidden)]
-    pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
-        tokio02::sync::oneshot::channel()
-    }
-}

@@ -1,4 +1,4 @@
-use crate::{async_runtime, middleware::Error};
+use crate::{async_runtime, middleware};
 
 use http::{HeaderValue, Uri};
 use once_cell::sync::Lazy;
@@ -30,8 +30,9 @@ pub(crate) static SPEAKEASY_SERVER_URL: Lazy<String> = Lazy::new(|| {
 
 pub trait Transport {
     type Output: Send + 'static;
+    type Error: Send + 'static;
 
-    fn send(&self, request: IngestRequest) -> Result<Self::Output, Error>;
+    fn send(&self, request: IngestRequest) -> Result<Self::Output, Self::Error>;
 }
 
 #[derive(Debug, Clone)]
@@ -51,8 +52,9 @@ impl GrpcClient {
 
 impl Transport for GrpcClient {
     type Output = ();
+    type Error = middleware::Error;
 
-    fn send(&self, request: IngestRequest) -> Result<Self::Output, Error> {
+    fn send(&self, request: IngestRequest) -> Result<Self::Output, Self::Error> {
         // NOTE: Using hyper directly as there seems to be a bug with tonic v0.3 throwing
         // an error from rustls. When making the middleware for actix4 we can hopefully
         // avoid doing this and just use the client directly from tonic.
@@ -65,7 +67,7 @@ impl Transport for GrpcClient {
 
         let authority = uri
             .authority()
-            .ok_or_else(|| Error::InvalidServerError("authority".to_string()))?
+            .ok_or_else(|| Self::Error::InvalidServerError("authority".to_string()))?
             .clone();
 
         let token = self.token.clone();
@@ -128,10 +130,9 @@ pub(crate) mod tests {
 
     impl Transport for Arc<GrpcMock> {
         type Output = ();
+        type Error = ();
 
-        fn send(&self, request: IngestRequest) -> Result<Self::Output, super::Error> {
-            println!("SENDING!");
-
+        fn send(&self, request: IngestRequest) -> Result<Self::Output, Self::Error> {
             let har = serde_json::from_str(&request.har).unwrap();
 
             let mut sender = self.sender.clone();

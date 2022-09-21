@@ -1,4 +1,7 @@
-use crate::{transport::GrpcClient, Config, Error, Masking, RequestConfig};
+use crate::{
+    transport::{GrpcClient, Transport},
+    Config, Error, Masking, RequestConfig,
+};
 
 /// Speakeasy SDK instance
 #[doc(hidden)]
@@ -8,6 +11,19 @@ pub struct SpeakeasySdk<GrpcClient> {
 
     pub(crate) config: RequestConfig,
     pub(crate) transport: GrpcClient,
+}
+
+impl<T: Transport> SpeakeasySdk<T> {
+    pub fn new_with_transport(config: Config, transport: T) -> Self {
+        let config = RequestConfig::from(config);
+        let masking = Masking::default();
+
+        Self {
+            masking,
+            config,
+            transport,
+        }
+    }
 }
 
 impl SpeakeasySdk<GrpcClient> {

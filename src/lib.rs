@@ -6,10 +6,10 @@ mod util;
 
 pub(crate) mod async_runtime;
 pub(crate) mod controller;
-pub(crate) mod sdk;
-pub(crate) mod transport;
 
 pub mod middleware;
+pub mod sdk;
+pub mod transport;
 
 use http::header::InvalidHeaderValue;
 use thiserror::Error;

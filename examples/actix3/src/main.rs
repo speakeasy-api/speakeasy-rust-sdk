@@ -78,7 +78,7 @@ async fn main() -> std::io::Result<()> {
         };
 
         // Create a new Speakeasy SDK instance
-        let mut sdk = SpeakeasySdk::new(config);
+        let mut sdk = SpeakeasySdk::try_new(config).expect("API key is valid");
 
         // Configure masking for query
         sdk.masking.with_query_string_mask("secret", "********");

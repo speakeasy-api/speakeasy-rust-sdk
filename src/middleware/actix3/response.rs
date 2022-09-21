@@ -11,7 +11,7 @@ use futures::future::{ok, Ready};
 
 use crate::generic_http::{BodyCapture, GenericResponse};
 use crate::middleware::MAX_SIZE;
-use crate::MiddlewareController;
+use crate::{async_runtime, MiddlewareController};
 
 #[derive(Clone)]
 pub struct SpeakeasySdk {}
@@ -131,7 +131,7 @@ impl<B> PinnedDrop for ResponseWithBodySender<B> {
                 response.body = BodyCapture::Captured(self.body_accum.to_vec().into())
             }
 
-            tokio02::task::spawn(async move {
+            async_runtime::spawn_task(async move {
                 sender
                     .send(super::MiddlewareMessage::Response {
                         request_id,

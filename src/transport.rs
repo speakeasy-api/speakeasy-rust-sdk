@@ -29,7 +29,9 @@ pub(crate) static SPEAKEASY_SERVER_URL: Lazy<String> = Lazy::new(|| {
 });
 
 pub trait Transport {
-    fn send(&self, request: IngestRequest) -> Result<(), Error>;
+    type Output: Send + 'static;
+
+    fn send(&self, request: IngestRequest) -> Result<Self::Output, Error>;
 }
 
 #[derive(Debug, Clone)]
@@ -48,12 +50,13 @@ impl GrpcClient {
 }
 
 impl Transport for GrpcClient {
-    fn send(&self, request: IngestRequest) -> Result<(), Error> {
+    type Output = ();
+
+    fn send(&self, request: IngestRequest) -> Result<Self::Output, Error> {
         // NOTE: Using hyper directly as there seems to be a bug with tonic v0.3 throwing
         // an error from rustls. When making the middleware for actix4 we can hopefully
         // avoid doing this and just use the client directly from tonic.
         let insecure_client = hyper::Client::builder().http2_only(true).build_http();
-
         let client = hyper::Client::builder()
             .http2_only(true)
             .build(hyper_openssl::HttpsConnector::new().expect("Need OpenSSL"));
@@ -108,4 +111,20 @@ impl Transport for GrpcClient {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use har::Har;
+
+    use super::*;
+
+    #[derive(Debug, Clone)]
+    pub struct GrpcMock {}
+
+    impl Transport for GrpcMock {
+        type Output = (IngestRequest, Har);
+
+        fn send(&self, request: IngestRequest) -> Result<Self::Output, super::Error> {
+            let har = Har::from_str(&request.har).unwrap();
+            Ok((request, har))
+        }
+    }
+}

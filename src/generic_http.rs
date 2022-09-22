@@ -7,6 +7,11 @@ pub(crate) const DROPPED_TEXT: &str = "--dropped--";
 pub(crate) struct GenericCookie {
     pub(crate) name: String,
     pub(crate) value: String,
+    pub(crate) path: Option<String>,
+    pub(crate) domain: Option<String>,
+    pub(crate) expires: Option<DateTime<Utc>>,
+    pub(crate) http_only: Option<bool>,
+    pub(crate) secure: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

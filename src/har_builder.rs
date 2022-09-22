@@ -181,7 +181,12 @@ impl HarBuilder {
             .map(|cookie| HarCookie {
                 name: cookie.name.clone(),
                 value: masker.mask(&cookie.name, &cookie.value),
-                ..Default::default()
+                path: cookie.path.clone(),
+                domain: cookie.domain.clone(),
+                expires: cookie.expires.as_ref().map(ToString::to_string),
+                http_only: cookie.http_only,
+                secure: cookie.secure,
+                comment: None,
             })
             .collect()
     }
@@ -268,7 +273,12 @@ impl HarBuilder {
             .map(|cookie| HarCookie {
                 name: cookie.name.clone(),
                 value: masker.mask(&cookie.name, &cookie.value),
-                ..Default::default()
+                path: cookie.path.clone(),
+                domain: cookie.domain.clone(),
+                expires: cookie.expires.as_ref().map(ToString::to_string),
+                http_only: cookie.http_only,
+                secure: cookie.secure,
+                comment: None,
             })
             .collect()
     }

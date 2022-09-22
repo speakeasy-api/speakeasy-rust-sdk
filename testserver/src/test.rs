@@ -1,6 +1,7 @@
 use crate::{get_entry, get_log, TEST_DATA};
 use actix_web::client::Client;
 use har::Har;
+use itertools::Itertools;
 use pretty_assertions::assert_eq;
 use std::{io::Read, time::Duration};
 
@@ -150,7 +151,35 @@ fn integration_tests() {
             let mut want_headers = want_har_entry.response.headers.clone();
             want_headers.sort_by_key(|h| h.value.clone());
 
-            assert_eq!(got_headers, want_headers);
+            assert_eq!(
+                got_headers
+                    .into_iter()
+                    .map(|mut h| {
+                        if h.name == "set-cookie" {
+                            h.value = h.value.chars().sorted().rev().collect::<String>();
+                        }
+                        h
+                    })
+                    .collect::<Vec<_>>(),
+                want_headers
+                    .into_iter()
+                    .map(|mut h| {
+                        if h.name == "set-cookie" {
+                            h.value = h.value.chars().sorted().rev().collect::<String>();
+                        }
+                        h
+                    })
+                    .collect::<Vec<_>>()
+            );
+
+            // check response cookies
+            let mut got_cookies = got_har_entry.response.cookies.clone();
+            got_cookies.sort_by_key(|h| h.name.clone());
+
+            let mut want_cookies = want_har_entry.response.cookies.clone();
+            want_cookies.sort_by_key(|h| h.name.clone());
+
+            assert_eq!(got_cookies, want_cookies);
         }
     });
 }

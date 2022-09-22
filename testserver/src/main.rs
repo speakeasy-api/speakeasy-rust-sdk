@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fs::File, io::Write};
 
 use actix_web::{
+    http::Cookie,
     web::{self, ReqData},
     App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
@@ -329,8 +330,18 @@ fn build_response(test_input: TestInput) -> HttpResponse {
 
     if let Some(response_headers) = test_input.args.response_headers {
         for header in response_headers {
-            for value in header.values {
-                response_base.header(header.key.clone(), value);
+            if header.key == "Set-Cookie" {
+                for cookie_val in header.values {
+                    let cookie = Cookie::parse(cookie_val).unwrap();
+
+                    println!("cookie: {:#?}", cookie);
+
+                    response_base.cookie(cookie);
+                }
+            } else {
+                for value in header.values {
+                    response_base.header(header.key.clone(), value);
+                }
             }
         }
     }

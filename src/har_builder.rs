@@ -356,12 +356,19 @@ impl HarBuilder {
 }
 
 fn build_headers_size(headers: &HeaderMap) -> i64 {
-    let mut headers_raw_without_values = String::new();
     let mut headers_size = 0;
     for (name, value) in headers.iter() {
-        write!(headers_raw_without_values, "{}: \r\n", name.as_str()).unwrap();
-        headers_size = headers_size + value.as_bytes().len();
+        headers_size += name.as_str().len();
+        headers_size = headers_size + value.len();
+
+        // : + space + \r\n
+        headers_size += 4;
     }
-    headers_size = headers_size + headers_raw_without_values.len();
+
+    if headers.len() > 1 {
+        // drop the last new line
+        headers_size -= 1;
+    }
+
     headers_size as i64
 }

@@ -5,7 +5,7 @@
   },
   "args": {
     "method": "POST",
-    "url": "http://localhost/test?querytest1=test1&querytest2=test2&querytest3=test3",
+    "url": "http://localhost:8080/test?querytest1=test1&querytest2=test2&querytest3=test3",
     "headers": [
       {
         "key": "Cookie",

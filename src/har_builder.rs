@@ -128,15 +128,12 @@ impl HarBuilder {
         self.request
             .headers
             .iter()
-            .map(|(name, value)| {
-                let unescaped = html_escape::decode_html_entities(value.to_str().unwrap_or(""));
-                let masked = masker.mask(name.as_str(), &unescaped);
-
-                HarHeader {
-                    name: name.to_string(),
-                    value: masked,
-                    comment: None,
-                }
+            .map(|(name, value)| HarHeader {
+                name: name.to_string(),
+                value: masker
+                    .mask(name.as_str(), value.to_str().unwrap_or(""))
+                    .to_string(),
+                comment: None,
             })
             .collect()
     }

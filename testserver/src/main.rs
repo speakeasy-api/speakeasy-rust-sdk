@@ -2,16 +2,16 @@ use std::{collections::HashMap, fs::File, io::Write};
 
 use actix_web::{
     web::{self, ReqData},
-    App, HttpRequest, HttpResponse, HttpServer, Responder,
+    App, HttpMessage, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 
-use har::Har;
+use har::{v1_2::Log, Har};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use speakeasy_protos::ingest::IngestRequest;
 use speakeasy_rust_sdk::{
     middleware::actix3::Middleware, sdk, transport::Transport, Config, Masking,
-    MiddlewareController, StringMaskingOption,
+    MiddlewareController,
 };
 
 const TEST_NAME_HEADER: &str = "x-speakeasy-test-name";
@@ -114,9 +114,17 @@ async fn index_get(
 
     controller.set_masking(masking).await;
 
+    let mut response = HttpResponse::Ok();
+
+    if let Ok(cookies) = req.cookies() {
+        for cookie in cookies.iter() {
+            response.cookie(cookie.clone());
+        }
+    }
+
     match text {
-        Some(text) => HttpResponse::Ok().body(text),
-        None => HttpResponse::Ok().body(""),
+        Some(text) => response.body(text),
+        None => response.body(""),
     }
 }
 
@@ -139,9 +147,17 @@ async fn index_post(
 
     controller.set_masking(masking).await;
 
+    let mut response = HttpResponse::Ok();
+
+    if let Ok(cookies) = req.cookies() {
+        for cookie in cookies.iter() {
+            response.cookie(cookie.clone());
+        }
+    }
+
     match text {
-        Some(text) => HttpResponse::Ok().body(text),
-        None => HttpResponse::Ok().body(""),
+        Some(text) => response.body(text),
+        None => response.body(""),
     }
 }
 
@@ -172,11 +188,15 @@ impl Transport for GrpcMock {
     }
 }
 
-pub fn get_entry(har: Har) -> har::v1_2::Entries {
+pub fn get_log(har: Har) -> Log {
     match har.log {
-        har::Spec::V1_2(log) => log.entries.first().unwrap().clone(),
+        har::Spec::V1_2(log) => log.clone(),
         har::Spec::V1_3(_) => todo!(),
     }
+}
+
+pub fn get_entry(har: Har) -> har::v1_2::Entries {
+    get_log(har).entries.first().unwrap().clone()
 }
 
 fn get_test_name(har: Har) -> String {

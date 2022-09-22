@@ -5,7 +5,7 @@
   },
   "args": {
     "method": "GET",
-    "url": "http://localhost/test",
+    "url": "http://localhost:8080/test",
     "headers": [
       { "key": "Cookie", "values": ["cookie1=value1; cookie2=value2"] },
       { "key": "Host", "values": ["test.com"] },

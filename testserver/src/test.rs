@@ -1,8 +1,8 @@
-use crate::{get_entry, TestInput, TEST_DATA};
-use actix_web::{client::Client, http::Cookie};
-use har::{v1_2::Headers, Har};
+use crate::{get_entry, get_log, TEST_DATA};
+use actix_web::client::Client;
+use har::Har;
 use pretty_assertions::assert_eq;
-use std::{collections::HashMap, io::Read, time::Duration};
+use std::{io::Read, time::Duration};
 
 #[test]
 fn integration_tests() {
@@ -22,19 +22,14 @@ fn integration_tests() {
             println!("running test: {}", test_name);
 
             let mut client = if test_input.args.method == "POST" {
-                Client::default().post("http://localhost:8080/test")
+                Client::default().post(test_input.args.url)
             } else {
-                Client::default().get("http://localhost:8080/test")
+                Client::default().get(test_input.args.url)
             };
 
             for header in &test_input.args.headers {
                 for value in &header.values {
                     client = client.header(header.key.clone(), &**value);
-
-                    if header.key == "Cookie" {
-                        client =
-                            client.cookie(Cookie::build(header.key.clone(), &**value).finish());
-                    }
                 }
             }
 
@@ -65,8 +60,21 @@ fn integration_tests() {
             got_har_file.read_to_string(&mut got_har_string).unwrap();
             let got_har: Har = serde_json::from_str(&got_har_string).unwrap();
 
+            let got_har_log = get_log(got_har.clone());
+            let want_har_log = get_log(want_har.clone());
+
             let got_har_entry = get_entry(got_har);
             let want_har_entry = get_entry(want_har);
+
+            // check log parent fields
+            assert_eq!(got_har_log.creator, want_har_log.creator);
+            // assert_eq!(got_har_log.comment, want_har_log.comment);
+
+            // check query string
+            assert_eq!(
+                got_har_entry.request.query_string,
+                want_har_entry.request.query_string
+            );
 
             let mut got_headers = got_har_entry.request.headers.clone();
             got_headers.sort_by_key(|h| h.name.clone());
@@ -92,21 +100,47 @@ fn integration_tests() {
                     .collect::<Vec<_>>()
             );
 
-            // check response headers
-            let mut got_headers = got_har_entry.response.headers.clone();
-            got_headers.sort_by_key(|h| h.name.clone());
-
-            let mut want_headers = want_har_entry.response.headers.clone();
-            want_headers.sort_by_key(|h| h.name.clone());
-
-            // check request headers
+            // check request body size
             assert_eq!(
-                got_headers
+                got_har_entry.request.body_size,
+                want_har_entry.request.body_size.max(0)
+            );
+
+            let mut got_cookies = got_har_entry.request.cookies.clone();
+            got_cookies.sort_by_key(|h| h.name.clone());
+
+            let mut want_cookies = want_har_entry.request.cookies.clone();
+            want_cookies.sort_by_key(|h| h.name.clone());
+
+            // check request cookies
+            assert_eq!(
+                got_cookies
                     .into_iter()
+                    .filter(|h| h.name != "x-speakeasy-test-name")
+                    .filter(|h| if h.name == "content-length" && h.value == "0" {
+                        false
+                    } else {
+                        true
+                    })
                     .filter(|h| h.name != "date")
                     .collect::<Vec<_>>(),
-                want_headers.into_iter().collect::<Vec<_>>()
-            )
+                want_cookies
+                    .into_iter()
+                    .filter(|h| h.name != "connection")
+                    .collect::<Vec<_>>()
+            );
+
+            assert_eq!(got_har_entry.request.method, want_har_entry.request.method);
+
+            assert_eq!(
+                got_har_entry.request.url,
+                want_har_entry.request.url.replace(":8080", "")
+            );
+
+            assert_eq!(
+                got_har_entry.server_ip_address,
+                want_har_entry.server_ip_address
+            );
         }
     });
 }

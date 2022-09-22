@@ -6,7 +6,8 @@ use har::{
     },
     Har,
 };
-use http::StatusCode;
+use http::{HeaderMap, StatusCode};
+use std::fmt::Write;
 use url::Url;
 
 use crate::{
@@ -137,7 +138,7 @@ impl HarBuilder {
             cookies: self.build_request_cookies(&masking.request_cookie_mask),
             headers: self.build_request_headers(&masking.request_header_mask),
             query_string: self.build_query_string(&masking.query_string_mask),
-            headers_size: format!("{:?}", &self.request.headers).len() as i64,
+            headers_size: build_headers_size(&self.request.headers),
             body_size,
             post_data: self.build_body_post_data(&masking.request_masks),
             comment: None,
@@ -174,7 +175,7 @@ impl HarBuilder {
                 .and_then(|v| v.to_str().ok())
                 .filter(|v| !v.is_empty())
                 .map(ToString::to_string),
-            headers_size: format!("{:?}", &self.response.headers).len() as i64,
+            headers_size: build_headers_size(&self.response.headers),
             body_size: self.build_response_body_size(),
             comment: None,
         }
@@ -352,4 +353,15 @@ impl HarBuilder {
 
         Some(url)
     }
+}
+
+fn build_headers_size(headers: &HeaderMap) -> i64 {
+    let mut headers_raw_without_values = String::new();
+    let mut headers_size = 0;
+    for (name, value) in headers.iter() {
+        write!(headers_raw_without_values, "{}: \r\n", name.as_str()).unwrap();
+        headers_size = headers_size + value.as_bytes().len();
+    }
+    headers_size = headers_size + headers_raw_without_values.len();
+    headers_size as i64
 }

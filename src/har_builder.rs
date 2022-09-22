@@ -244,6 +244,7 @@ impl HarBuilder {
                 Some(PostData {
                     mime_type: content_type.to_string(),
                     text: Some(body_string),
+                    params: Some(vec![]),
                     ..Default::default()
                 })
             }
@@ -258,6 +259,7 @@ impl HarBuilder {
                 Some(PostData {
                     mime_type: content_type.to_string(),
                     text: Some(DROPPED_TEXT.to_string()),
+                    params: Some(vec![]),
                     ..Default::default()
                 })
             }

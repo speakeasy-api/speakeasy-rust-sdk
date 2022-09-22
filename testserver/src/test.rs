@@ -120,9 +120,15 @@ fn integration_tests() {
             );
 
             assert_eq!(
+                got_har_entry.request.post_data,
+                want_har_entry.request.post_data
+            );
+
+            assert_eq!(
                 got_har_entry.request.query_string,
                 want_har_entry.request.query_string
             );
+
             assert_eq!(
                 got_har_entry.request.body_size,
                 want_har_entry.request.body_size

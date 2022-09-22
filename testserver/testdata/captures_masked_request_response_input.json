@@ -20,7 +20,7 @@
     ],
     "body": "{\"test\": \"test\", \"test1\": 123.456, \"address\": {\"line1\": \"line1\", \"line2\": \"line2\", \"street\": \"street\"}}",
     "response_status": -1,
-    "response_body": "{\r\n  \"test\":\"test\",\r\n  \"test1\":123.456,\r\n  \"address\":{\r\n    \"line1\":\"line1\",\r\n    \"line2\":\"line2\",\r\n    \"street\":\"street\"\r\n  }\r\n}",
+    "response_body": "{\r\n  \"test\": \"test\",\r\n  \"test1\": 123.456,\r\n  \"address\":{\r\n    \"line1\": \"line1\",\r\n    \"line2\": \"line2\",\r\n    \"street\": \"street\"\r\n  }\r\n}",
     "response_headers": [
       {
         "key": "Set-Cookie",

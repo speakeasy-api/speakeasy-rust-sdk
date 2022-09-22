@@ -11,20 +11,20 @@
         "time": 1,
         "request": {
           "method": "GET",
-          "url": "http://localhost/test?param1=value1",
+          "url": "/test?param1=value1",
           "httpVersion": "HTTP/1.1",
           "cookies": [],
           "headers": [
             {
-              "name": "Accept-Encoding",
+              "name": "accept-encoding",
               "value": "gzip, deflate"
             },
             {
-              "name": "Connection",
+              "name": "connection",
               "value": "close"
             },
             {
-              "name": "Host",
+              "name": "host",
               "value": "test.com"
             }
           ],
@@ -44,17 +44,17 @@
           "cookies": [],
           "headers": [
             {
-              "name": "Content-Length",
+              "name": "content-length",
               "value": "4"
             },
             {
-              "name": "Content-Type",
-              "value": "application/octet-stream"
+              "name": "content-type",
+              "value": "text/plain; charset=utf-8"
             }
           ],
           "content": {
             "size": 4,
-            "mimeType": "application/octet-stream",
+            "mimeType": "text/plain; charset=utf-8",
             "text": "test"
           },
           "redirectURL": "",
@@ -70,6 +70,6 @@
         "serverIPAddress": "test.com"
       }
     ],
-    "comment": "request capture for http://localhost/test?param1=value1"
+    "comment": "request capture for /test?param1=value1"
   }
 }

@@ -11,7 +11,7 @@
         "time": 1,
         "request": {
           "method": "POST",
-          "url": "http://localhost/test?querytest1=test1\u0026querytest2=__masked__\u0026querytest3=_____",
+          "url": "/test?querytest1=test1\u0026querytest2=__masked__\u0026querytest3=_____",
           "httpVersion": "HTTP/1.1",
           "cookies": [
             { 
@@ -29,31 +29,31 @@
           ],
           "headers": [
             {
-              "name": "Accept-Encoding", 
+              "name": "accept-encoding", 
               "value": "gzip, deflate" 
             },
             {
-              "name": "Authorization",
+              "name": "authorization",
               "value": "_____"
             },
             {
-              "name": "Connection",
+              "name": "connection",
               "value": "close"
             },
             {
-              "name": "Content-Length",
+              "name": "content-length",
               "value": "103"
             },
             {
-              "name": "Content-Type",
+              "name": "content-type",
               "value": "application/json"
             },
             {
-              "name": "Cookie",
+              "name": "cookie",
               "value": "cookie1=value1; cookie2=value2; cookie3=value3"
             },
             {
-              "name": "Host",
+              "name": "host",
               "value": "__masked__"
             }
           ],
@@ -100,39 +100,39 @@
           ],
           "headers": [
             {
-              "name": "Content-Length",
+              "name": "content-length",
               "value": "129"
             },
             {
-              "name": "Content-Type",
+              "name": "content-type",
               "value": "application/json; charset=utf-8"
             },
             {
-              "name": "Session",
+              "name": "session",
               "value": "_____"
             },
             {
-              "name": "Set-Cookie",
+              "name": "set-cookie",
               "value": "cookie1=value1"
             },
             {
-              "name": "Set-Cookie",
+              "name": "set-cookie",
               "value": "cookie2=value2; Max-Age=3600"
             },
             {
-              "name": "Set-Cookie",
+              "name": "set-cookie",
               "value": "cookie3=value3"
             },
             {
-              "name": "X-Custom-Header",
+              "name": "x-custom-header",
               "value": "__masked__"
             },
             {
-              "name": "X-Custom-Header",
+              "name": "x-custom-header",
               "value": "__masked__"
             },
             {
-              "name": "X-Custom-Header",
+              "name": "x-custom-header",
               "value": "__masked__"
             }
           ],
@@ -150,6 +150,6 @@
         "serverIPAddress": "test.com"
       }
     ],
-    "comment": "request capture for http://localhost/test?querytest1=test1\u0026querytest2=__masked__\u0026querytest3=_____"
+    "comment": "request capture for /test?querytest1=test1\u0026querytest2=__masked__\u0026querytest3=_____"
   }
 }

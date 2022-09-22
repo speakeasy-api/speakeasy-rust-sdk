@@ -28,7 +28,7 @@
           "cookie8=value8; Max-Age=3600; Domain=test.com; Path=/test; Secure; HttpOnly"
         ]
       },
-      { "key": "Content-Type", "values": ["application/octet-stream"] },
+      { "key": "Content-Type", "values": ["text/plain; charset=utf-8"] },
       { "key": "Content-Length", "values": ["4"] }
     ]
   }

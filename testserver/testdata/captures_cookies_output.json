@@ -11,7 +11,7 @@
         "time": 1,
         "request": {
           "method": "GET",
-          "url": "http://localhost/test",
+          "url": "/test",
           "httpVersion": "HTTP/1.1",
           "cookies": [
             {
@@ -25,19 +25,19 @@
           ],
           "headers": [
             {
-              "name": "Accept-Encoding",
+              "name": "accept-encoding",
               "value": "gzip, deflate"
             },
             {
-              "name": "Connection",
+              "name": "connection",
               "value": "close"
             },
             {
-              "name": "Cookie",
+              "name": "cookie",
               "value": "cookie1=value1; cookie2=value2"
             },
             {
-              "name": "Host",
+              "name": "host",
               "value": "test.com"
             }
           ],
@@ -96,49 +96,49 @@
           ],
           "headers": [
             {
-              "name": "Content-Length",
+              "name": "content-length",
               "value": "4"
             },
             {
-              "name": "Content-Type",
-              "value": "application/octet-stream"
+              "name": "content-type",
+              "value": "text/plain; charset=utf-8"
             },
             {
-              "name": "Set-Cookie",
+              "name": "set-cookie",
               "value": "cookie1=value1"
             },
             {
-              "name": "Set-Cookie",
+              "name": "set-cookie",
               "value": "cookie2=value2; Max-Age=3600; Expires=Wed, 01 Jan 2020 01:00:00 GMT"
             },
             {
-              "name": "Set-Cookie",
+              "name": "set-cookie",
               "value": "cookie3=value3; Expires=Wed, 21 Oct 2015 07:28:00 GMT"
             },
             {
-              "name": "Set-Cookie",
+              "name": "set-cookie",
               "value": "cookie4=value4; Domain=test.com"
             },
             {
-              "name": "Set-Cookie",
+              "name": "set-cookie",
               "value": "cookie5=value5; Path=/test"
             },
             {
-              "name": "Set-Cookie",
+              "name": "set-cookie",
               "value": "cookie6=value6; Secure"
             },
             {
-              "name": "Set-Cookie",
+              "name": "set-cookie",
               "value": "cookie7=value7; HttpOnly"
             },
             {
-              "name": "Set-Cookie",
+              "name": "set-cookie",
               "value": "cookie8=value8; Path=/test; Domain=test.com; Max-Age=3600; Expires=Wed, 01 Jan 2020 01:00:00 GMT; Secure; HttpOnly"
             }
           ],
           "content": {
             "size": 4,
-            "mimeType": "application/octet-stream",
+            "mimeType": "text/plain; charset=utf-8",
             "text": "test"
           },
           "redirectURL": "",
@@ -154,6 +154,6 @@
         "serverIPAddress": "test.com"
       }
     ],
-    "comment": "request capture for http://localhost/test"
+    "comment": "request capture for /test"
   }
 }

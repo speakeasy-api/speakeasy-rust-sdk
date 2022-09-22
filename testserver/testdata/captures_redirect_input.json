@@ -15,7 +15,7 @@
     "response_body": "test",
     "response_headers": [
       { "key": "Location", "values": ["http://test.com/test2"] },
-      { "key": "Content-Type", "values": ["application/octet-stream"] },
+      { "key": "Content-Type", "values": ["text/plain; charset=utf-8"] },
       { "key": "Content-Length", "values": ["4"] }
     ]
   }

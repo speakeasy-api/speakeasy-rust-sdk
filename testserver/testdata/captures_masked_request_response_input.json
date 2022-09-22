@@ -40,8 +40,8 @@
       "querytest3": "_____"
     },
     "request_header_masks": {
-      "Host": "__masked__",
-      "Authorization": "_____"
+      "host": "__masked__",
+      "authorization": "_____"
     },
     "request_cookie_masks": {
       "cookie2": "__masked__",
@@ -55,8 +55,8 @@
       "test1": "-12321"
     },
     "response_header_masks": {
-      "Session": "_____",
-      "X-Custom-Header": "__masked__"
+      "session": "_____",
+      "x-custom-header": "__masked__"
     },
     "response_cookie_masks": {
       "cookie2": "__masked__",

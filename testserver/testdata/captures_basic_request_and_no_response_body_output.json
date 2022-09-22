@@ -11,20 +11,20 @@
         "time": 1,
         "request": {
           "method": "GET",
-          "url": "http://localhost:8080/test",
+          "url": ":8080/test",
           "httpVersion": "HTTP/1.1",
           "cookies": [],
           "headers": [
             {
-              "name": "Accept-Encoding",
+              "name": "accept-encoding",
               "value": "gzip, deflate"
             },
             {
-              "name": "Connection",
+              "name": "connection",
               "value": "close"
             },
             {
-              "name": "Host",
+              "name": "host",
               "value": "test.com"
             }
           ],
@@ -56,6 +56,6 @@
         "connection": "8080"
       }
     ],
-    "comment": "request capture for http://localhost:8080/test"
+    "comment": "request capture for :8080/test"
   }
 }

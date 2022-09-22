@@ -1,67 +1,18 @@
-use std::collections::HashMap;
-
+use crate::{get_entry, TestInput, TEST_DATA};
 use actix_web::client::Client;
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Fields {
-    max_capture_size: i32,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Args {
-    method: String,
-    url: String,
-    #[serde(default)]
-    headers: Vec<Header>,
-    #[serde(default)]
-    body: Option<String>,
-    #[serde(default)]
-    response_status: Option<i32>,
-    #[serde(default)]
-    response_body: Option<String>,
-    #[serde(default)]
-    response_headers: Option<Vec<Header>>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Header {
-    key: String,
-    values: Vec<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct TestInput {
-    name: String,
-    fields: Fields,
-    args: Args,
-}
+use har::{v1_2::Headers, Har};
+use pretty_assertions::assert_eq;
+use std::{collections::HashMap, io::Read};
 
 #[test]
 fn integration_tests() {
     let mut system = actix_rt::System::new("test");
 
     system.block_on(async {
-        let tests_data_folder = format!("{}/testdata", env!("CARGO_MANIFEST_DIR"));
-        let mut test_inputs: HashMap<String, TestInput> = HashMap::new();
-        let mut test_outputs: HashMap<String, har::Har> = HashMap::new();
-
-        for entry in std::fs::read_dir(tests_data_folder).unwrap() {
-            let entry = entry.unwrap();
-            let path = entry.path();
-            let file_name = path.file_name().unwrap().to_str().unwrap().to_string();
-            if file_name.ends_with("_input.json") {
-                let file = std::fs::File::open(path).unwrap();
-                let test_input: TestInput = serde_json::from_reader(file).unwrap();
-
-                test_inputs.insert(file_name.clone().replace("_input.json", ""), test_input);
-            } else if file_name.ends_with("_output.json") {
-                let file = std::fs::File::open(path).unwrap();
-                let test_output: har::Har = serde_json::from_reader(file).unwrap();
-
-                test_outputs.insert(file_name.clone().replace("_output.json", ""), test_output);
-            }
-        }
+        let tests_results_folder = format!("{}/testresults", env!("CARGO_MANIFEST_DIR"));
+        let test_data = &TEST_DATA;
+        let test_inputs = test_data.0.clone();
+        let test_outputs = test_data.1.clone();
 
         for (test_name, test_input) in test_inputs {
             println!("running test: {}", test_name);
@@ -76,6 +27,40 @@ fn integration_tests() {
 
             client = client.header("x-speakeasy-test-name", &*test_name);
             client.send().await.unwrap();
+        }
+
+        for (test_name, test_output) in test_outputs {
+            println!("checking response for: {}", test_name);
+
+            let want_har = test_output;
+
+            let got_har_file_name = format!("{}/{}.har", tests_results_folder, test_name);
+            let mut got_har_file = std::fs::File::open(&got_har_file_name).unwrap();
+            let mut got_har_string = String::new();
+
+            got_har_file.read_to_string(&mut got_har_string).unwrap();
+            let got_har: Har = serde_json::from_str(&got_har_string).unwrap();
+
+            let got_har_entry = get_entry(got_har);
+            let want_har_entry = get_entry(want_har);
+
+            // check headers
+            assert_eq!(
+                got_har_entry
+                    .request
+                    .headers
+                    .clone()
+                    .into_iter()
+                    .filter(|h| h.name != "x-speakeasy-test-name")
+                    .filter(|h| h.name != "date")
+                    .collect::<Vec<_>>(),
+                want_har_entry
+                    .request
+                    .headers
+                    .clone()
+                    .into_iter()
+                    .collect::<Vec<_>>()
+            )
         }
     });
 }

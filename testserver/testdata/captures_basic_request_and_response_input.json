@@ -14,7 +14,7 @@
       { "key": "Connection", "values": ["close"] }
     ],
     "response_headers": [
-      { "key": "Content-Type", "values": ["application/octet-stream"] },
+      { "key": "Content-Type", "values": ["text/plain; charset=utf-8"] },
       { "key": "Content-Length", "values": ["4"] }
     ]
   }

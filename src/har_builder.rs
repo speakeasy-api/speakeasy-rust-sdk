@@ -327,13 +327,13 @@ impl HarBuilder {
 
     fn build_response_body_size(&self) -> i64 {
         if self.response.status == StatusCode::NOT_MODIFIED {
-            -1
+            0
         } else {
             self.response
                 .headers
                 .get(http::header::CONTENT_LENGTH)
                 .and_then(|v| v.to_str().unwrap().parse::<i64>().ok())
-                .unwrap_or_else(|| self.response.body.size())
+                .unwrap_or(-1)
         }
     }
 

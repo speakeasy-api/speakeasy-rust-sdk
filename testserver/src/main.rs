@@ -335,9 +335,13 @@ fn build_response(test_input: TestInput) -> HttpResponse {
         }
     }
 
-    match test_input.args.response_body {
-        Some(body) => response_base.body(body),
-        None => response_base.finish(),
+    match (
+        test_input.args.response_status,
+        test_input.args.response_body,
+    ) {
+        (Some(304), _) => response_base.finish(),
+        (_, Some(body)) => response_base.body(body),
+        (_, None) => response_base.finish(),
     }
 }
 

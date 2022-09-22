@@ -177,17 +177,9 @@ impl HarBuilder {
     fn build_request_cookies(&self, masker: &GenericMask<RequestCookieMask>) -> Vec<HarCookie> {
         self.request
             .cookies
-            .iter()
-            .map(|cookie| HarCookie {
-                name: cookie.name.clone(),
-                value: masker.mask(&cookie.name, &cookie.value),
-                path: cookie.path.clone(),
-                domain: cookie.domain.clone(),
-                expires: cookie.expires.as_ref().map(ToString::to_string),
-                http_only: cookie.http_only,
-                secure: cookie.secure,
-                comment: None,
-            })
+            .clone()
+            .into_iter()
+            .map(|c| c.into_har_cookie(masker))
             .collect()
     }
 
@@ -269,17 +261,9 @@ impl HarBuilder {
     fn build_response_cookies(&self, masker: &GenericMask<ResponseCookieMask>) -> Vec<HarCookie> {
         self.response
             .cookies
-            .iter()
-            .map(|cookie| HarCookie {
-                name: cookie.name.clone(),
-                value: masker.mask(&cookie.name, &cookie.value),
-                path: cookie.path.clone(),
-                domain: cookie.domain.clone(),
-                expires: cookie.expires.as_ref().map(ToString::to_string),
-                http_only: cookie.http_only,
-                secure: cookie.secure,
-                comment: None,
-            })
+            .clone()
+            .into_iter()
+            .map(|c| c.into_har_cookie(masker))
             .collect()
     }
 

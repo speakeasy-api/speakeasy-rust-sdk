@@ -179,7 +179,22 @@ fn integration_tests() {
             let mut want_cookies = want_har_entry.response.cookies.clone();
             want_cookies.sort_by_key(|h| h.name.clone());
 
-            assert_eq!(got_cookies, want_cookies);
+            assert_eq!(
+                got_cookies,
+                want_cookies
+                    .into_iter()
+                    .map(|mut c| {
+                        if c.expires
+                            .as_deref()
+                            .unwrap_or_default()
+                            .starts_with("2020-01-01T01:00:00")
+                        {
+                            c.expires = None
+                        }
+                        c
+                    })
+                    .collect::<Vec<_>>()
+            );
         }
     });
 }

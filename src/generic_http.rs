@@ -1,5 +1,8 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, SecondsFormat, Utc};
+use har::v1_2::Cookies as HarCookie;
 use http::{version::Version, HeaderMap};
+
+use crate::masking::generic_mask::GenericMask;
 
 pub(crate) const DROPPED_TEXT: &str = "--dropped--";
 
@@ -12,6 +15,24 @@ pub(crate) struct GenericCookie {
     pub(crate) expires: Option<DateTime<Utc>>,
     pub(crate) http_only: Option<bool>,
     pub(crate) secure: Option<bool>,
+}
+
+impl GenericCookie {
+    pub(crate) fn into_har_cookie<T>(self, masker: &GenericMask<T>) -> HarCookie {
+        HarCookie {
+            name: self.name.clone(),
+            value: masker.mask(&self.name, &self.value),
+            path: self.path.clone(),
+            domain: self.domain.clone(),
+            expires: self
+                .expires
+                .as_ref()
+                .map(|exp| exp.to_rfc3339_opts(SecondsFormat::Millis, true)),
+            http_only: self.http_only,
+            secure: self.secure,
+            comment: None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

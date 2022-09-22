@@ -44,16 +44,6 @@ pub enum BodyCapture {
     Captured(bytes::Bytes),
 }
 
-impl BodyCapture {
-    pub(crate) fn size(&self) -> i64 {
-        match self {
-            BodyCapture::Empty => -1,
-            BodyCapture::Dropped => 11,
-            BodyCapture::Captured(captured) => captured.len() as i64,
-        }
-    }
-}
-
 /// A generic HTTP request, which can be converted to a HAR request
 /// A generic HTTP request, can be created from a request from a web framework
 #[derive(Debug, Clone)]

@@ -35,7 +35,6 @@ chrono = {version = "0.4.22", default-features = false, features = ["alloc", "st
 har = "0.7.1"
 once_cell = "1.14.0"
 regex = "1.6.0"
-urlencoding = "2.1.2"
 uuid = {version = "1.1.2", features = ["v4", "fast-rng"]}
 
 # serialization / deserialization
@@ -48,6 +47,7 @@ url = "2.3.1"
 
 # http
 http = "0.2.8"
+mime = "0.3.16"
 
 ## web frameworks middleware
 

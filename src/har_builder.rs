@@ -235,7 +235,11 @@ impl HarBuilder {
 
                 let body_str = String::from_utf8_lossy(text);
 
-                let body_string = if content_type == "application/json" {
+                let mime: mime::Mime = content_type
+                    .parse()
+                    .unwrap_or(mime::APPLICATION_OCTET_STREAM);
+
+                let body_string = if mime == mime::APPLICATION_JSON {
                     masker.mask(&body_str)
                 } else {
                     body_str.to_string()
@@ -358,7 +362,7 @@ fn build_headers_size(headers: &HeaderMap) -> i64 {
     let mut headers_size = 0;
     for (name, value) in headers.iter() {
         headers_size += name.as_str().len();
-        headers_size = headers_size + value.len();
+        headers_size += value.len();
 
         // : + space + \r\n
         headers_size += 4;

@@ -235,11 +235,7 @@ impl HarBuilder {
 
                 let body_str = String::from_utf8_lossy(text);
 
-                let mime: mime::Mime = content_type
-                    .parse()
-                    .unwrap_or(mime::APPLICATION_OCTET_STREAM);
-
-                let body_string = if mime == mime::APPLICATION_JSON {
+                let body_string = if content_type.contains("application/json") {
                     masker.mask(&body_str)
                 } else {
                     body_str.to_string()
@@ -313,7 +309,7 @@ impl HarBuilder {
             BodyCapture::Captured(ref text) => {
                 let body_str = String::from_utf8_lossy(text);
 
-                let body_string = if &mime_type == "application/json" {
+                let body_string = if mime_type.contains("application/json") {
                     masker.mask(&body_str)
                 } else {
                     body_str.to_string()

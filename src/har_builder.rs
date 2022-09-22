@@ -166,6 +166,7 @@ impl HarBuilder {
                 .headers
                 .get("location")
                 .and_then(|v| v.to_str().ok())
+                .filter(|v| !v.is_empty())
                 .map(ToString::to_string),
             headers_size: format!("{:?}", &self.response.headers).len() as i64,
             body_size: self.build_response_body_size(),

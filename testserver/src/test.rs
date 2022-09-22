@@ -136,6 +136,12 @@ fn integration_tests() {
                 got_har_entry.request.http_version,
                 want_har_entry.request.http_version
             );
+
+            // RESPONSE TESTS
+            assert_eq!(
+                got_har_entry.response.redirect_url.unwrap_or_default(),
+                want_har_entry.response.redirect_url.unwrap_or_default()
+            );
         }
     });
 }

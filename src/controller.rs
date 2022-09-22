@@ -123,6 +123,19 @@ impl Controller {
             .await
             .unwrap();
     }
+
+    pub async fn set_max_capture_size(&self, capture_size: u64) {
+        self.sender
+            .clone()
+            .send(MiddlewareMessage::ControllerMessage(
+                ControllerMessage::SetMaxCaptureSize {
+                    request_id: self.request_id.clone(),
+                    capture_size,
+                },
+            ))
+            .await
+            .unwrap();
+    }
 }
 
 // private methods used in middleware

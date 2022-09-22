@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs::File, io::Write};
 
 use actix_web::{
     web::{self, ReqData},
-    App, HttpMessage, HttpRequest, HttpResponse, HttpServer, Responder,
+    App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 
 use har::{v1_2::Log, Har};
@@ -94,11 +94,7 @@ pub struct TestInput {
     args: Args,
 }
 
-async fn index_get(
-    text: Option<String>,
-    req: HttpRequest,
-    controller: ReqData<MiddlewareController>,
-) -> impl Responder {
+async fn index_get(req: HttpRequest, controller: ReqData<MiddlewareController>) -> impl Responder {
     // get header and apply masking
     let test_data = &TEST_DATA;
 
@@ -110,29 +106,18 @@ async fn index_get(
         .unwrap();
 
     let test_input = test_data.0.clone().get(test_name).unwrap().clone();
-    let masking = build_masking(test_input);
+    let masking = build_masking(test_input.clone());
+
+    controller
+        .set_max_capture_size(test_input.fields.max_capture_size as u64)
+        .await;
 
     controller.set_masking(masking).await;
 
-    let mut response = HttpResponse::Ok();
-
-    if let Ok(cookies) = req.cookies() {
-        for cookie in cookies.iter() {
-            response.cookie(cookie.clone());
-        }
-    }
-
-    match text {
-        Some(text) => response.body(text),
-        None => response.body(""),
-    }
+    build_response(test_input)
 }
 
-async fn index_post(
-    text: Option<String>,
-    req: HttpRequest,
-    controller: ReqData<MiddlewareController>,
-) -> impl Responder {
+async fn index_post(req: HttpRequest, controller: ReqData<MiddlewareController>) -> impl Responder {
     let test_data = &TEST_DATA;
 
     let test_name = req
@@ -143,22 +128,15 @@ async fn index_post(
         .unwrap();
 
     let test_input = test_data.0.clone().get(test_name).unwrap().clone();
-    let masking = build_masking(test_input);
+    let masking = build_masking(test_input.clone());
+
+    controller
+        .set_max_capture_size(test_input.fields.max_capture_size as u64)
+        .await;
 
     controller.set_masking(masking).await;
 
-    let mut response = HttpResponse::Ok();
-
-    if let Ok(cookies) = req.cookies() {
-        for cookie in cookies.iter() {
-            response.cookie(cookie.clone());
-        }
-    }
-
-    match text {
-        Some(text) => response.body(text),
-        None => response.body(""),
-    }
+    build_response(test_input)
 }
 
 #[derive(Debug, Clone)]
@@ -340,6 +318,27 @@ fn build_masking(input: TestInput) -> Masking {
     }
 
     masking
+}
+
+fn build_response(test_input: TestInput) -> HttpResponse {
+    let mut response_base = match test_input.args.response_status {
+        Some(200 | -1) | None => HttpResponse::Ok(),
+        Some(304) => HttpResponse::NotModified(),
+        _ => HttpResponse::Ok(),
+    };
+
+    if let Some(response_headers) = test_input.args.response_headers {
+        for header in response_headers {
+            for value in header.values {
+                response_base.header(header.key.clone(), value);
+            }
+        }
+    }
+
+    match test_input.args.response_body {
+        Some(body) => response_base.body(body),
+        None => response_base.finish(),
+    }
 }
 
 #[cfg(test)]

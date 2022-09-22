@@ -11,7 +11,7 @@
         "time": 1,
         "request": {
           "method": "GET",
-          "url": ":8080/test",
+          "url": "/test",
           "httpVersion": "HTTP/1.1",
           "cookies": [],
           "headers": [
@@ -56,6 +56,6 @@
         "connection": "8080"
       }
     ],
-    "comment": "request capture for :8080/test"
+    "comment": "request capture for /test"
   }
 }

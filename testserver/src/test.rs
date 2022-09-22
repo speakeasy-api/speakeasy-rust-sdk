@@ -132,10 +132,7 @@ fn integration_tests() {
 
             assert_eq!(got_har_entry.request.method, want_har_entry.request.method);
 
-            assert_eq!(
-                got_har_entry.request.url,
-                want_har_entry.request.url.replace(":8080", "")
-            );
+            assert_eq!(got_har_entry.request.url, want_har_entry.request.url);
 
             assert_eq!(
                 got_har_entry.server_ip_address,

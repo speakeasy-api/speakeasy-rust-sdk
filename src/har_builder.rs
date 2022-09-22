@@ -29,6 +29,7 @@ pub struct HarBuilder {
 
     // helper to avoid cloning
     masked_full_url: Option<Url>,
+    path_with_query: Option<String>,
 }
 
 impl HarBuilder {
@@ -37,11 +38,31 @@ impl HarBuilder {
             request,
             response,
             masked_full_url: None,
+            path_with_query: None,
         }
     }
 
     pub(crate) fn build(mut self, masking: &Masking) -> Har {
         self.masked_full_url = self.get_masked_full_url(masking);
+
+        let path = self
+            .masked_full_url
+            .as_ref()
+            .map(|u| u.path().to_string())
+            .unwrap_or_else(|| self.request.path.clone());
+
+        let path_with_query =
+            if let Some(query) = self.masked_full_url.as_ref().and_then(|u| u.query()) {
+                if query == "" {
+                    path
+                } else {
+                    format!("{}?{}", path, query)
+                }
+            } else {
+                path
+            };
+
+        self.path_with_query = Some(path_with_query);
 
         Har {
             log: har::Spec::V1_2(Log {
@@ -52,10 +73,7 @@ impl HarBuilder {
                 },
                 comment: Some(format!(
                     "request capture for {}",
-                    self.masked_full_url
-                        .as_ref()
-                        .map(|u| u.to_string())
-                        .unwrap_or_else(|| self.request.path.clone())
+                    &self.path_with_query.as_ref().expect("just set above")
                 )),
                 entries: vec![HarEntry {
                     started_date_time: self.request.start_time.to_rfc3339(),
@@ -82,22 +100,6 @@ impl HarBuilder {
     }
 
     fn build_request(&self, masking: &Masking) -> HarRequest {
-        let path = self
-            .masked_full_url
-            .as_ref()
-            .map(|u| u.path().to_string())
-            .unwrap_or_else(|| self.request.path.clone());
-
-        let url = if let Some(query) = self.masked_full_url.as_ref().and_then(|u| u.query()) {
-            if query == "" {
-                path
-            } else {
-                format!("{}?{}", path, query)
-            }
-        } else {
-            path
-        };
-
         let body_size = if self.request.body == BodyCapture::Empty {
             -1
         } else {
@@ -110,7 +112,11 @@ impl HarBuilder {
 
         HarRequest {
             method: self.request.method.clone(),
-            url,
+            url: self
+                .path_with_query
+                .as_ref()
+                .expect("path_with_query should be set")
+                .clone(),
             http_version: format!("{:?}", self.request.http_version),
             cookies: self.build_request_cookies(&masking.request_cookie_mask),
             headers: self.build_request_headers(&masking.request_header_mask),

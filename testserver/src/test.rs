@@ -68,13 +68,7 @@ fn integration_tests() {
 
             // check log parent fields
             assert_eq!(got_har_log.creator, want_har_log.creator);
-            // assert_eq!(got_har_log.comment, want_har_log.comment);
-
-            // check query string
-            assert_eq!(
-                got_har_entry.request.query_string,
-                want_har_entry.request.query_string
-            );
+            assert_eq!(got_har_log.comment, want_har_log.comment);
 
             let mut got_headers = got_har_entry.request.headers.clone();
             got_headers.sort_by_key(|h| h.name.clone());
@@ -124,7 +118,10 @@ fn integration_tests() {
                     .collect::<Vec<_>>()
             );
 
-            // check request body size
+            assert_eq!(
+                got_har_entry.request.query_string,
+                want_har_entry.request.query_string
+            );
             assert_eq!(
                 got_har_entry.request.body_size,
                 want_har_entry.request.body_size
@@ -134,6 +131,10 @@ fn integration_tests() {
             assert_eq!(
                 got_har_entry.server_ip_address,
                 want_har_entry.server_ip_address
+            );
+            assert_eq!(
+                got_har_entry.request.http_version,
+                want_har_entry.request.http_version
             );
         }
     });

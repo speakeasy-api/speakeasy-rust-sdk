@@ -69,7 +69,7 @@ futures = {version = "0.3", optional = true}
 pin-project = {version = "1", optional = true}
 
 # protos
-speakeasy-protos = {path = "../speakeasy-schemas/grpc/rust/lib", optional = true}# TODO: publish to crates and use that
+speakeasy-protos = {git = "https://github.com/praveenperera/speakeasy-schemas/", branch = "rust", optional = true}# TODO: publish to crates and use that
 
 [dev-dependencies]
 maplit = "1.0.2"

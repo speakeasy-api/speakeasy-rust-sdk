@@ -71,6 +71,5 @@ pin-project = {version = "1", optional = true}
 speakeasy-protos = {path = "../speakeasy-schemas/grpc/rust/lib", optional = true}# TODO: publish to crates and use that
 
 [dev-dependencies]
-actix-rt = "1"
 maplit = "1.0.2"
 pretty_assertions = "1.3"

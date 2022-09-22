@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use actix3::client::Client;
+use actix_web::client::Client;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -42,7 +42,7 @@ fn integration_tests() {
     let mut system = actix_rt::System::new("test");
 
     system.block_on(async {
-        let tests_data_folder = format!("{}/tests/testdata", env!("CARGO_MANIFEST_DIR"));
+        let tests_data_folder = format!("{}/testdata", env!("CARGO_MANIFEST_DIR"));
         let mut test_inputs: HashMap<String, TestInput> = HashMap::new();
         let mut test_outputs: HashMap<String, har::Har> = HashMap::new();
 

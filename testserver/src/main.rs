@@ -1,3 +1,5 @@
+use std::{fs::File, io::Write};
+
 use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 
 use har::Har;
@@ -16,8 +18,6 @@ async fn index_get(text: Option<String>, req: HttpRequest) -> impl Responder {
         .unwrap()
         .to_str()
         .unwrap();
-
-    println!("TEST NAME: {}", test_name);
 
     match text {
         Some(text) => HttpResponse::Ok().body(text),
@@ -46,7 +46,11 @@ impl Transport for GrpcMock {
         let har: Har = serde_json::from_str(&request.har).unwrap();
         let test_name = get_test_name(har.clone());
 
-        std::fs::re
+        let test_data_folder = format!("{}/testresults", env!("CARGO_MANIFEST_DIR"));
+        let test_result_file = format!("{}/{}.har", test_data_folder, test_name);
+
+        let mut file = File::create(&test_result_file).unwrap();
+        file.write_all(request.har.as_bytes()).unwrap();
 
         Ok(())
     }
@@ -112,3 +116,6 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+#[cfg(test)]
+mod test;

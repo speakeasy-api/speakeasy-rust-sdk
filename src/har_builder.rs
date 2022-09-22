@@ -156,7 +156,13 @@ impl HarBuilder {
 
         HarResponse {
             status: self.response.status.as_u16() as i64,
-            status_text: self.response.status.to_string(),
+            status_text: self
+                .response
+                .status
+                .canonical_reason()
+                .as_ref()
+                .map(ToString::to_string)
+                .unwrap_or_else(|| self.response.status.to_string()),
             http_version: format!("{:?}", &self.response.http_version),
             cookies: self.build_response_cookies(&masking.response_cookie_mask),
             headers: self.build_response_headers(&masking.response_header_mask),

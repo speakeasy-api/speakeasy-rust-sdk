@@ -195,6 +195,21 @@ fn integration_tests() {
                     })
                     .collect::<Vec<_>>()
             );
+
+            assert_eq!(
+                got_har_entry.response.http_version,
+                want_har_entry.response.http_version
+            );
+
+            assert_eq!(
+                got_har_entry.response.http_version,
+                want_har_entry.response.http_version
+            );
+
+            assert_eq!(
+                got_har_entry.response.status_text,
+                want_har_entry.response.status_text
+            );
         }
     });
 }

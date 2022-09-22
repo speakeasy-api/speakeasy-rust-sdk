@@ -1,10 +1,15 @@
 use crate::generic_http::{BodyCapture, GenericCookie, GenericRequest, GenericResponse};
 use actix3::dev::{ServiceRequest, ServiceResponse};
 use actix_http2::HttpMessage;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 
 impl GenericRequest {
-    pub fn new(request: &ServiceRequest, path_hint: Option<String>, body: BodyCapture) -> Self {
+    pub fn new(
+        request: &ServiceRequest,
+        start_time: DateTime<Utc>,
+        path_hint: Option<String>,
+        body: BodyCapture,
+    ) -> Self {
         // NOTE IMPORTANT: have to get cookies before getting headers or there will be a BorrowMut
         // already borrowed error from actix
         let cookies = get_request_cookies(request);
@@ -19,7 +24,7 @@ impl GenericRequest {
         let port = full_url.as_ref().and_then(|u| u.port());
 
         GenericRequest {
-            start_time: Utc::now(),
+            start_time,
             path_hint,
             full_url,
             method: request.method().to_string(),

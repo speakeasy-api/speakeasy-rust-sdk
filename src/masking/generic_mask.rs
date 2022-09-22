@@ -54,7 +54,6 @@ impl<T> GenericMaskInner<T> {
         if let Some(field_index) = self.fields.get(field) {
             self.mask_option.get_mask_replacement(field, field_index)
         } else {
-            println!("field: {}, value: {}", field, value);
             value
         }
     }

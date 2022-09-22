@@ -10,6 +10,7 @@ use actix3::{
 };
 use actix_http2::h1::Payload;
 use actix_service1::{Service, Transform};
+use chrono::Utc;
 use futures::{
     future::{ok, Future, Ready},
     stream::StreamExt,
@@ -77,6 +78,7 @@ where
     }
 
     fn call(&mut self, mut req: ServiceRequest) -> Self::Future {
+        let start_time = Utc::now();
         let request_id = RequestId::from(uuid::Uuid::new_v4().to_string());
         let mut svc = self.service.clone();
         let mut sender = self.sender.clone();
@@ -146,7 +148,7 @@ where
             }
 
             // create a new GenericRequest from the ServiceRequest
-            let generic_request = GenericRequest::new(&req, path_hint, body);
+            let generic_request = GenericRequest::new(&req, start_time, path_hint, body);
 
             if let Err(error) = sender
                 .send(MiddlewareMessage::Request {

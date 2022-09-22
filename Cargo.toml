@@ -69,6 +69,7 @@ pin-project = {version = "1", optional = true}
 
 # protos
 speakeasy-protos = {path = "../speakeasy-schemas/grpc/rust/lib", optional = true}# TODO: publish to crates and use that
+html-escape = "0.2.11"
 
 [dev-dependencies]
 maplit = "1.0.2"

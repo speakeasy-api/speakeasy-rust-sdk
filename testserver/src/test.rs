@@ -1,5 +1,5 @@
 use crate::{get_entry, TestInput, TEST_DATA};
-use actix_web::client::Client;
+use actix_web::{client::Client, http::Cookie};
 use har::{v1_2::Headers, Har};
 use pretty_assertions::assert_eq;
 use std::{collections::HashMap, io::Read, time::Duration};
@@ -30,6 +30,11 @@ fn integration_tests() {
             for header in &test_input.args.headers {
                 for value in &header.values {
                     client = client.header(header.key.clone(), &**value);
+
+                    if header.key == "Cookie" {
+                        client =
+                            client.cookie(Cookie::build(header.key.clone(), &**value).finish());
+                    }
                 }
             }
 
@@ -69,7 +74,7 @@ fn integration_tests() {
             let mut want_headers = want_har_entry.request.headers.clone();
             want_headers.sort_by_key(|h| h.name.clone());
 
-            // check headers
+            // check request headers
             assert_eq!(
                 got_headers
                     .into_iter()
@@ -85,6 +90,22 @@ fn integration_tests() {
                     .into_iter()
                     .filter(|h| h.name != "connection")
                     .collect::<Vec<_>>()
+            );
+
+            // check response headers
+            let mut got_headers = got_har_entry.response.headers.clone();
+            got_headers.sort_by_key(|h| h.name.clone());
+
+            let mut want_headers = want_har_entry.response.headers.clone();
+            want_headers.sort_by_key(|h| h.name.clone());
+
+            // check request headers
+            assert_eq!(
+                got_headers
+                    .into_iter()
+                    .filter(|h| h.name != "date")
+                    .collect::<Vec<_>>(),
+                want_headers.into_iter().collect::<Vec<_>>()
             )
         }
     });

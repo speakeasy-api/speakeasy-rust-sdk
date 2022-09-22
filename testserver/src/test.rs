@@ -26,7 +26,8 @@ fn integration_tests() {
             }
 
             client = client.header("x-speakeasy-test-name", &*test_name);
-            client.send().await.unwrap();
+            let res = client.send().await.unwrap();
+            println!("response: {:#?}", res.headers());
         }
 
         for (test_name, test_output) in test_outputs {
@@ -52,6 +53,11 @@ fn integration_tests() {
                     .clone()
                     .into_iter()
                     .filter(|h| h.name != "x-speakeasy-test-name")
+                    .filter(|h| if h.name == "content-length" && h.value == "0" {
+                        false
+                    } else {
+                        true
+                    })
                     .filter(|h| h.name != "date")
                     .collect::<Vec<_>>(),
                 want_har_entry
@@ -59,6 +65,7 @@ fn integration_tests() {
                     .headers
                     .clone()
                     .into_iter()
+                    .filter(|h| h.name != "connection")
                     .collect::<Vec<_>>()
             )
         }

@@ -139,11 +139,6 @@ fn integration_tests() {
             );
 
             // RESPONSE TESTS
-            assert_eq!(
-                got_har_entry.response.redirect_url.unwrap_or_default(),
-                want_har_entry.response.redirect_url.unwrap_or_default()
-            );
-
             // check request headers
             let mut got_headers = got_har_entry.response.headers.clone();
             got_headers.sort_by_key(|h| h.value.clone());
@@ -209,6 +204,26 @@ fn integration_tests() {
             assert_eq!(
                 got_har_entry.response.status_text,
                 want_har_entry.response.status_text
+            );
+
+            assert_eq!(
+                got_har_entry.response.redirect_url.unwrap_or_default(),
+                want_har_entry.response.redirect_url.unwrap_or_default()
+            );
+
+            assert_eq!(
+                got_har_entry.response.body_size,
+                want_har_entry.response.body_size
+            );
+
+            assert_eq!(
+                got_har_entry.response.headers_size,
+                want_har_entry.response.headers_size
+            );
+
+            assert_eq!(
+                got_har_entry.response.content,
+                want_har_entry.response.content
             );
         }
     });

@@ -70,13 +70,13 @@ fn integration_tests() {
             assert_eq!(got_har_log.creator, want_har_log.creator);
             assert_eq!(got_har_log.comment, want_har_log.comment);
 
+            // check request headers
             let mut got_headers = got_har_entry.request.headers.clone();
             got_headers.sort_by_key(|h| h.name.clone());
 
             let mut want_headers = want_har_entry.request.headers.clone();
             want_headers.sort_by_key(|h| h.name.clone());
 
-            // check request headers
             assert_eq!(
                 got_headers
                     .into_iter()
@@ -94,13 +94,13 @@ fn integration_tests() {
                     .collect::<Vec<_>>()
             );
 
+            // check request cookies
             let mut got_cookies = got_har_entry.request.cookies.clone();
             got_cookies.sort_by_key(|h| h.name.clone());
 
             let mut want_cookies = want_har_entry.request.cookies.clone();
             want_cookies.sort_by_key(|h| h.name.clone());
 
-            // check request cookies
             assert_eq!(
                 got_cookies
                     .into_iter()
@@ -142,6 +142,15 @@ fn integration_tests() {
                 got_har_entry.response.redirect_url.unwrap_or_default(),
                 want_har_entry.response.redirect_url.unwrap_or_default()
             );
+
+            // check request headers
+            let mut got_headers = got_har_entry.response.headers.clone();
+            got_headers.sort_by_key(|h| h.value.clone());
+
+            let mut want_headers = want_har_entry.response.headers.clone();
+            want_headers.sort_by_key(|h| h.value.clone());
+
+            assert_eq!(got_headers, want_headers);
         }
     });
 }

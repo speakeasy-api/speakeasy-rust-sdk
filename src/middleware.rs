@@ -105,10 +105,12 @@ where
             .get_customer_id(&request_id)
             .unwrap_or_default();
 
+        let max_capture_size = self.controller_state.get_max_capture_size(&request_id);
+
         let transport = self.sdk.transport.clone();
 
         async_runtime::spawn_task(async move {
-            let har = HarBuilder::new(request, response).build(&masking);
+            let har = HarBuilder::new(request, response, max_capture_size).build(&masking);
             let har_json = serde_json::to_string(&har).expect("har will serialize to json");
 
             let masking_metadata = if masking.is_empty() {

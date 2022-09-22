@@ -27,16 +27,23 @@ pub struct HarBuilder {
     request: GenericRequest,
     response: GenericResponse,
 
+    max_capture_size: Option<u64>,
+
     // helper to avoid cloning
     masked_full_url: Option<Url>,
     path_with_query: Option<String>,
 }
 
 impl HarBuilder {
-    pub(crate) fn new(request: GenericRequest, response: GenericResponse) -> Self {
+    pub(crate) fn new(
+        request: GenericRequest,
+        response: GenericResponse,
+        max_capture_size: Option<u64>,
+    ) -> Self {
         Self {
             request,
             response,
+            max_capture_size,
             masked_full_url: None,
             path_with_query: None,
         }
@@ -53,7 +60,7 @@ impl HarBuilder {
 
         let path_with_query =
             if let Some(query) = self.masked_full_url.as_ref().and_then(|u| u.query()) {
-                if query == "" {
+                if query.is_empty() {
                     path
                 } else {
                     format!("{}?{}", path, query)
@@ -99,7 +106,16 @@ impl HarBuilder {
         }
     }
 
-    fn build_request(&self, masking: &Masking) -> HarRequest {
+    fn build_request(&mut self, masking: &Masking) -> HarRequest {
+        // drop body if controller was used to set a lower max capture size (request)
+        if let (Some(max_capture_size), BodyCapture::Captured(body)) =
+            (self.max_capture_size, &self.request.body)
+        {
+            if body.len() > max_capture_size as usize {
+                self.request.body = BodyCapture::Dropped
+            }
+        }
+
         let body_size = if self.request.body == BodyCapture::Empty {
             -1
         } else {
@@ -128,7 +144,16 @@ impl HarBuilder {
         }
     }
 
-    fn build_response(&self, masking: &Masking) -> HarResponse {
+    fn build_response(&mut self, masking: &Masking) -> HarResponse {
+        // drop body if controller was used to set a lower max capture size (response)
+        if let (Some(max_capture_size), BodyCapture::Captured(body)) =
+            (self.max_capture_size, &self.response.body)
+        {
+            if body.len() > max_capture_size as usize {
+                self.response.body = BodyCapture::Dropped
+            }
+        }
+
         HarResponse {
             status: self.response.status.as_u16() as i64,
             status_text: self.response.status.to_string(),

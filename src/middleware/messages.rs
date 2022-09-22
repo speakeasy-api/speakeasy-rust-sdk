@@ -34,4 +34,8 @@ pub enum ControllerMessage {
         request_id: RequestId,
         customer_id: String,
     },
+    SetMaxCaptureSize {
+        request_id: RequestId,
+        capture_size: u64,
+    },
 }

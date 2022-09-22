@@ -109,7 +109,7 @@
             },
             {
               "name": "set-cookie",
-              "value": "cookie2=value2; Max-Age=3600; Expires=Wed, 01 Jan 2020 01:00:00 GMT"
+              "value": "cookie2=value2; Max-Age=3600"
             },
             {
               "name": "set-cookie",
@@ -133,7 +133,7 @@
             },
             {
               "name": "set-cookie",
-              "value": "cookie8=value8; Path=/test; Domain=test.com; Max-Age=3600; Expires=Wed, 01 Jan 2020 01:00:00 GMT; Secure; HttpOnly"
+              "value": "cookie8=value8; Max-Age=3600; Domain=test.com; Path=/test; Secure; HttpOnly"
             }
           ],
           "content": {
@@ -142,7 +142,7 @@
             "text": "test"
           },
           "redirectURL": "",
-          "headersSize": 522,
+          "headersSize": 444,
           "bodySize": 4
         },
         "cache": {},

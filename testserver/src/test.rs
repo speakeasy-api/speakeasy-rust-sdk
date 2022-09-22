@@ -17,7 +17,11 @@ fn integration_tests() {
         for (test_name, test_input) in test_inputs {
             println!("running test: {}", test_name);
 
-            let mut client = Client::default().get("http://localhost:8080/test");
+            let mut client = if test_input.args.method == "POST" {
+                Client::default().post("http://localhost:8080/test")
+            } else {
+                Client::default().get("http://localhost:8080/test")
+            };
 
             for header in &test_input.args.headers {
                 for value in &header.values {
@@ -26,8 +30,15 @@ fn integration_tests() {
             }
 
             client = client.header("x-speakeasy-test-name", &*test_name);
-            let res = client.send().await.unwrap();
-            println!("response: {:#?}", res.headers());
+
+            let _res = if test_input.args.method == "POST" {
+                client
+                    .send_body(test_input.args.body.clone().unwrap())
+                    .await
+                    .unwrap()
+            } else {
+                client.send().await.unwrap()
+            };
         }
 
         for (test_name, test_output) in test_outputs {
@@ -45,12 +56,15 @@ fn integration_tests() {
             let got_har_entry = get_entry(got_har);
             let want_har_entry = get_entry(want_har);
 
+            let mut got_headers = got_har_entry.request.headers.clone();
+            got_headers.sort_by_key(|h| h.name.clone());
+
+            let mut want_headers = want_har_entry.request.headers.clone();
+            want_headers.sort_by_key(|h| h.name.clone());
+
             // check headers
             assert_eq!(
-                got_har_entry
-                    .request
-                    .headers
-                    .clone()
+                got_headers
                     .into_iter()
                     .filter(|h| h.name != "x-speakeasy-test-name")
                     .filter(|h| if h.name == "content-length" && h.value == "0" {
@@ -60,10 +74,7 @@ fn integration_tests() {
                     })
                     .filter(|h| h.name != "date")
                     .collect::<Vec<_>>(),
-                want_har_entry
-                    .request
-                    .headers
-                    .clone()
+                want_headers
                     .into_iter()
                     .filter(|h| h.name != "connection")
                     .collect::<Vec<_>>()

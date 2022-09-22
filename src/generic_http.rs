@@ -4,6 +4,7 @@ use http::{version::Version, HeaderMap};
 
 use crate::masking::generic_mask::GenericMask;
 
+// len => 11
 pub(crate) const DROPPED_TEXT: &str = "--dropped--";
 
 #[derive(Debug, Clone)]
@@ -41,6 +42,16 @@ pub enum BodyCapture {
     Empty,
     Dropped,
     Captured(bytes::Bytes),
+}
+
+impl BodyCapture {
+    pub(crate) fn size(&self) -> i64 {
+        match self {
+            BodyCapture::Empty => -1,
+            BodyCapture::Dropped => 11,
+            BodyCapture::Captured(captured) => captured.len() as i64,
+        }
+    }
 }
 
 /// A generic HTTP request, which can be converted to a HAR request

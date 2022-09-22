@@ -7,7 +7,6 @@ use har::{
     Har,
 };
 use http::{HeaderMap, StatusCode};
-use std::fmt::Write;
 use url::Url;
 
 use crate::{
@@ -295,7 +294,7 @@ impl HarBuilder {
             .unwrap_or("application/octet-stream")
             .to_string();
 
-        match self.request.body {
+        match self.response.body {
             BodyCapture::Empty => Content {
                 size: -1,
                 mime_type: Some(mime_type),
@@ -328,13 +327,13 @@ impl HarBuilder {
 
     fn build_response_body_size(&self) -> i64 {
         if self.response.status == StatusCode::NOT_MODIFIED {
-            0
+            -1
         } else {
             self.response
                 .headers
                 .get(http::header::CONTENT_LENGTH)
                 .and_then(|v| v.to_str().unwrap().parse::<i64>().ok())
-                .unwrap_or(-1)
+                .unwrap_or_else(|| self.response.body.size())
         }
     }
 

@@ -217,13 +217,14 @@ fn integration_tests() {
             );
 
             assert_eq!(
-                got_har_entry.response.headers_size,
-                want_har_entry.response.headers_size
+                got_har_entry.response.content,
+                want_har_entry.response.content
             );
 
+            //TODO: re-enable when testsuite bug is fixed
             // assert_eq!(
-            //     got_har_entry.response.content,
-            //     want_har_entry.response.content
+            //     got_har_entry.response.headers_size,
+            //     want_har_entry.response.headers_size
             // );
         }
     });

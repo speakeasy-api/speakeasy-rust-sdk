@@ -47,9 +47,9 @@ impl Deref for Fields {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct FieldsSearchMap(HashMap<String, usize>);
+pub(crate) struct BodyMaskFieldsSearchMap(HashMap<String, usize>);
 
-impl From<Fields> for FieldsSearchMap {
+impl From<Fields> for BodyMaskFieldsSearchMap {
     fn from(fields: Fields) -> Self {
         Self(
             fields
@@ -61,7 +61,7 @@ impl From<Fields> for FieldsSearchMap {
     }
 }
 
-impl FieldsSearchMap {
+impl BodyMaskFieldsSearchMap {
     pub(crate) fn get(&self, field: &str) -> Option<usize> {
         self.0.get(field).copied()
     }
@@ -83,5 +83,15 @@ impl From<Fields> for GenericMaskFieldsSearchMap {
                 .map(|(i, field)| (field.clone(), i))
                 .collect(),
         )
+    }
+}
+
+impl GenericMaskFieldsSearchMap {
+    pub(crate) fn get(&self, field: &str) -> Option<usize> {
+        self.0.get(field).copied()
+    }
+
+    pub(crate) fn into_iter(self) -> impl Iterator<Item = (String, usize)> {
+        self.0.into_iter()
     }
 }

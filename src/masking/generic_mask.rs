@@ -1,4 +1,4 @@
-use super::{fields::FieldsSearchMap, Fields, StringMaskingOption};
+use super::{fields::GenericMaskFieldsSearchMap, Fields, StringMaskingOption};
 use std::{collections::HashMap, marker::PhantomData};
 
 #[derive(Debug, Clone, Default)]
@@ -36,7 +36,7 @@ impl<T> GenericMask<T> {
 #[derive(Debug, Clone)]
 pub struct GenericMaskInner<T> {
     phantom: PhantomData<T>,
-    fields: FieldsSearchMap,
+    fields: GenericMaskFieldsSearchMap,
     mask_option: StringMaskingOption,
 }
 
@@ -54,6 +54,7 @@ impl<T> GenericMaskInner<T> {
         if let Some(field_index) = self.fields.get(field) {
             self.mask_option.get_mask_replacement(field, field_index)
         } else {
+            println!("field: {}, value: {}", field, value);
             value
         }
     }

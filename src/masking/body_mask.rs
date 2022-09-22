@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::util;
 
-use super::{fields::FieldsSearchMap, Fields, NumberMaskingOption, StringMaskingOption};
+use super::{fields::BodyMaskFieldsSearchMap, Fields, NumberMaskingOption, StringMaskingOption};
 
 /// Errors for creating BodyMasks
 #[derive(Debug, Error)]
@@ -35,7 +35,7 @@ pub(crate) struct BodyMask<T> {
 #[derive(Debug, Clone)]
 pub(crate) struct BodyMaskInner<T> {
     regex: Regex,
-    fields: FieldsSearchMap,
+    fields: BodyMaskFieldsSearchMap,
     mask_option: T,
 }
 

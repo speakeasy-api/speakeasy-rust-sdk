@@ -1,4 +1,4 @@
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 
 use har::Har;
 use speakeasy_protos::ingest::IngestRequest;
@@ -6,7 +6,19 @@ use speakeasy_rust_sdk::{
     middleware::actix3::Middleware, sdk, transport::Transport, Config, StringMaskingOption,
 };
 
-async fn index_get(text: Option<String>) -> impl Responder {
+const TEST_NAME_HEADER: &str = "x-speakeasy-test-name";
+
+async fn index_get(text: Option<String>, req: HttpRequest) -> impl Responder {
+    // get header and apply masking
+    let test_name = req
+        .headers()
+        .get(TEST_NAME_HEADER)
+        .unwrap()
+        .to_str()
+        .unwrap();
+
+    println!("TEST NAME: {}", test_name);
+
     match text {
         Some(text) => HttpResponse::Ok().body(text),
         None => HttpResponse::Ok().body(""),
@@ -32,8 +44,9 @@ impl Transport for GrpcMock {
 
     fn send(&self, request: IngestRequest) -> Result<Self::Output, Self::Error> {
         let har: Har = serde_json::from_str(&request.har).unwrap();
+        let test_name = get_test_name(har.clone());
 
-        println!("{}", get_test_name(har));
+        std::fs::re
 
         Ok(())
     }
@@ -48,7 +61,7 @@ fn get_test_name(har: Har) -> String {
             .request
             .headers
             .iter()
-            .find(|h| h.name == "x-speakeasy-test-name")
+            .find(|h| h.name == TEST_NAME_HEADER)
             .unwrap()
             .value
             .clone(),

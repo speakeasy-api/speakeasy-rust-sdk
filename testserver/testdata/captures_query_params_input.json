@@ -1,11 +1,11 @@
 {
-  "name": "captures redirect",
+  "name": "captures query params",
   "fields": {
     "max_capture_size": 9437184
   },
   "args": {
     "method": "GET",
-    "url": "http://test.com/test",
+    "url": "http://localhost/test?param1=value1",
     "headers": [
       { "key": "Host", "values": ["test.com"] },
       { "key": "Accept-Encoding", "values": ["gzip, deflate"] },
@@ -14,7 +14,6 @@
     "response_status": 200,
     "response_body": "test",
     "response_headers": [
-      { "key": "Location", "values": ["http://test.com/test2"] },
       { "key": "Content-Type", "values": ["application/octet-stream"] },
       { "key": "Content-Length", "values": ["4"] }
     ]

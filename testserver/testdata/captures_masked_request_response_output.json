@@ -11,7 +11,7 @@
         "time": 1,
         "request": {
           "method": "POST",
-          "url": "http://test.com/test?querytest1=test1\u0026querytest2=__masked__\u0026querytest3=_____",
+          "url": "http://localhost/test?querytest1=test1\u0026querytest2=__masked__\u0026querytest3=_____",
           "httpVersion": "HTTP/1.1",
           "cookies": [
             { 
@@ -150,6 +150,6 @@
         "serverIPAddress": "test.com"
       }
     ],
-    "comment": "request capture for http://test.com/test?querytest1=test1\u0026querytest2=__masked__\u0026querytest3=_____"
+    "comment": "request capture for http://localhost/test?querytest1=test1\u0026querytest2=__masked__\u0026querytest3=_____"
   }
 }

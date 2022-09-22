@@ -11,7 +11,7 @@
         "time": 1,
         "request": {
           "method": "GET",
-          "url": "http://test.com/test",
+          "url": "http://localhost/test",
           "httpVersion": "HTTP/1.1",
           "cookies": [],
           "headers": [
@@ -24,12 +24,16 @@
               "value": "close"
             },
             {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
               "name": "Host",
               "value": "test.com"
             }
           ],
           "queryString": [],
-          "headersSize": 67,
+          "headersSize": 99,
           "bodySize": -1
         },
         "response": {
@@ -44,20 +48,16 @@
             },
             {
               "name": "Content-Type",
-              "value": "application/octet-stream"
-            },
-            {
-              "name": "Location",
-              "value": "http://test.com/test2"
+              "value": "text/plain; charset=utf-8"
             }
           ],
           "content": {
             "size": 4,
-            "mimeType": "application/octet-stream",
+            "mimeType": "text/plain; charset=utf-8",
             "text": "test"
           },
-          "redirectURL": "http://test.com/test2",
-          "headersSize": 92,
+          "redirectURL": "",
+          "headersSize": 60,
           "bodySize": 4
         },
         "cache": {},
@@ -69,6 +69,6 @@
         "serverIPAddress": "test.com"
       }
     ],
-    "comment": "request capture for http://test.com/test"
+    "comment": "request capture for http://localhost/test"
   }
 }

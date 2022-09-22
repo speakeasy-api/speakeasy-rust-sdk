@@ -11,7 +11,7 @@
         "time": 1,
         "request": {
           "method": "GET",
-          "url": "http://test.com/test",
+          "url": "http://localhost/test?param1=value1",
           "httpVersion": "HTTP/1.1",
           "cookies": [],
           "headers": [
@@ -24,16 +24,17 @@
               "value": "close"
             },
             {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
               "name": "Host",
               "value": "test.com"
             }
           ],
-          "queryString": [],
-          "headersSize": 99,
+          "queryString": [
+            {
+              "name": "param1",
+              "value": "value1"
+            }
+          ],
+          "headersSize": 67,
           "bodySize": -1
         },
         "response": {
@@ -48,16 +49,16 @@
             },
             {
               "name": "Content-Type",
-              "value": "text/plain; charset=utf-8"
+              "value": "application/octet-stream"
             }
           ],
           "content": {
             "size": 4,
-            "mimeType": "text/plain; charset=utf-8",
+            "mimeType": "application/octet-stream",
             "text": "test"
           },
           "redirectURL": "",
-          "headersSize": 60,
+          "headersSize": 59,
           "bodySize": 4
         },
         "cache": {},
@@ -69,6 +70,6 @@
         "serverIPAddress": "test.com"
       }
     ],
-    "comment": "request capture for http://test.com/test"
+    "comment": "request capture for http://localhost/test?param1=value1"
   }
 }

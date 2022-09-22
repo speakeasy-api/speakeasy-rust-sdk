@@ -1,24 +1,24 @@
 {
-  "name": "captures post request with Body",
+  "name": "drops response Body when too large",
   "fields": {
-    "max_capture_size": 9437184
+    "max_capture_size": 10
   },
   "args": {
     "method": "POST",
-    "url": "http://test.com/test",
+    "url": "http://localhost/test",
     "headers": [
       { "key": "Content-Type", "values": ["application/json"] },
-      { "key": "Content-Length", "values": ["16"] },
+      { "key": "Content-Length", "values": ["10"] },
       { "key": "Host", "values": ["test.com"] },
       { "key": "Accept-Encoding", "values": ["gzip, deflate"] },
       { "key": "Connection", "values": ["close"] }
     ],
-    "body": "{\"test\": \"test\"}",
-    "response_status": -1,
-    "response_body": "test",
+    "body": "{\"a\": \"b\"}",
+    "response_status": 200,
+    "response_body": "response is way too large to be captured",
     "response_headers": [
       { "key": "Content-Type", "values": ["text/plain; charset=utf-8"] },
-      { "key": "Content-Length", "values": ["4"] }
+      { "key": "Content-Length", "values": ["40"] }
     ]
   }
 }

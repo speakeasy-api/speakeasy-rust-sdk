@@ -1,15 +1,17 @@
 {
-  "name": "captures basic request and no response body",
+  "name": "captures no response body when not modified",
   "fields": {
     "max_capture_size": 9437184
   },
   "args": {
     "method": "GET",
-    "url": "http://test.com:8080/test",
+    "url": "http://localhost/test",
     "headers": [
       { "key": "Host", "values": ["test.com"] },
       { "key": "Accept-Encoding", "values": ["gzip, deflate"] },
       { "key": "Connection", "values": ["close"] }
-    ]
+    ],
+    "response_status": 304,
+    "response_body": "test"
   }
 }

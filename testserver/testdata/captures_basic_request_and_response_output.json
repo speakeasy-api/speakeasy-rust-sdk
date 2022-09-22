@@ -11,7 +11,7 @@
         "time": 1,
         "request": {
           "method": "GET",
-          "url": "http://test.com/test",
+          "url": "http://localhost/test",
           "httpVersion": "HTTP/1.1",
           "cookies": [],
           "headers": [
@@ -65,6 +65,6 @@
         "serverIPAddress": "test.com"
       }
     ],
-    "comment": "request capture for http://test.com/test"
+    "comment": "request capture for http://localhost/test"
   }
 }

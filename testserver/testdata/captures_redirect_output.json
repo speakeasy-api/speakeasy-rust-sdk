@@ -10,8 +10,8 @@
         "startedDateTime": "2020-01-01T00:00:00Z",
         "time": 1,
         "request": {
-          "method": "POST",
-          "url": "http://test.com/test",
+          "method": "GET",
+          "url": "http://localhost/test",
           "httpVersion": "HTTP/1.1",
           "cookies": [],
           "headers": [
@@ -24,26 +24,13 @@
               "value": "close"
             },
             {
-              "name": "Content-Length",
-              "value": "16"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
               "name": "Host",
               "value": "test.com"
             }
           ],
           "queryString": [],
-          "postData": {
-            "mimeType": "application/json",
-            "params": [],
-            "text": "{\"test\": \"test\"}"
-          },
-          "headersSize": 119,
-          "bodySize": 16
+          "headersSize": 67,
+          "bodySize": -1
         },
         "response": {
           "status": 200,
@@ -57,16 +44,20 @@
             },
             {
               "name": "Content-Type",
-              "value": "text/plain; charset=utf-8"
+              "value": "application/octet-stream"
+            },
+            {
+              "name": "Location",
+              "value": "http://test.com/test2"
             }
           ],
           "content": {
             "size": 4,
-            "mimeType": "text/plain; charset=utf-8",
+            "mimeType": "application/octet-stream",
             "text": "test"
           },
-          "redirectURL": "",
-          "headersSize": 60,
+          "redirectURL": "http://test.com/test2",
+          "headersSize": 92,
           "bodySize": 4
         },
         "cache": {},
@@ -78,6 +69,6 @@
         "serverIPAddress": "test.com"
       }
     ],
-    "comment": "request capture for http://test.com/test"
+    "comment": "request capture for http://localhost/test"
   }
 }

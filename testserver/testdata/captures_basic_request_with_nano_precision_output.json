@@ -7,11 +7,11 @@
     },
     "entries": [
       {
-        "startedDateTime": "2020-01-01T00:00:00Z",
-        "time": 1,
+        "startedDateTime": "2020-01-01T00:00:00.000000500Z",
+        "time": 2,
         "request": {
           "method": "GET",
-          "url": "http://test.com/test",
+          "url": "http://localhost/test",
           "httpVersion": "HTTP/1.1",
           "cookies": [],
           "headers": [
@@ -33,18 +33,28 @@
           "bodySize": -1
         },
         "response": {
-          "status": 304,
-          "statusText": "Not Modified",
+          "status": 200,
+          "statusText": "OK",
           "httpVersion": "HTTP/1.1",
           "cookies": [],
-          "headers": [],
+          "headers": [
+            {
+              "name": "Content-Length",
+              "value": "4"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/octet-stream"
+            }
+          ],
           "content": {
-            "size": -1,
-            "mimeType": "application/octet-stream"
+            "size": 4,
+            "mimeType": "application/octet-stream",
+            "text": "test"
           },
           "redirectURL": "",
-          "headersSize": 0,
-          "bodySize": 0
+          "headersSize": 59,
+          "bodySize": 4
         },
         "cache": {},
         "timings": {
@@ -55,6 +65,6 @@
         "serverIPAddress": "test.com"
       }
     ],
-    "comment": "request capture for http://test.com/test"
+    "comment": "request capture for http://localhost/test"
   }
 }

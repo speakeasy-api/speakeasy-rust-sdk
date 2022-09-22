@@ -1,20 +1,21 @@
 {
-  "name": "captures query params",
+  "name": "captures basic request and response with different content types",
   "fields": {
     "max_capture_size": 9437184
   },
   "args": {
     "method": "GET",
-    "url": "http://test.com/test?param1=value1",
+    "url": "http://localhost/test",
     "headers": [
+      { "key": "Content-Type", "values": ["application/json"] },
       { "key": "Host", "values": ["test.com"] },
       { "key": "Accept-Encoding", "values": ["gzip, deflate"] },
       { "key": "Connection", "values": ["close"] }
     ],
-    "response_status": 200,
+    "response_status": -1,
     "response_body": "test",
     "response_headers": [
-      { "key": "Content-Type", "values": ["application/octet-stream"] },
+      { "key": "Content-Type", "values": ["text/plain; charset=utf-8"] },
       { "key": "Content-Length", "values": ["4"] }
     ]
   }

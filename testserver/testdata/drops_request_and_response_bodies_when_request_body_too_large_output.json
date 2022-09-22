@@ -10,8 +10,8 @@
         "startedDateTime": "2020-01-01T00:00:00Z",
         "time": 1,
         "request": {
-          "method": "GET",
-          "url": "http://test.com:8080/test",
+          "method": "POST",
+          "url": "http://localhost/test",
           "httpVersion": "HTTP/1.1",
           "cookies": [],
           "headers": [
@@ -24,27 +24,50 @@
               "value": "close"
             },
             {
+              "name": "Content-Length",
+              "value": "25"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
               "name": "Host",
               "value": "test.com"
             }
           ],
           "queryString": [],
-          "headersSize": 67,
-          "bodySize": -1
+          "postData": {
+            "mimeType": "application/json",
+            "params": [],
+            "text": "--dropped--"
+          },
+          "headersSize": 119,
+          "bodySize": 25
         },
         "response": {
           "status": 200,
           "statusText": "OK",
           "httpVersion": "HTTP/1.1",
           "cookies": [],
-          "headers": [],
+          "headers": [
+            {
+              "name": "Content-Length",
+              "value": "40"
+            },
+            {
+              "name": "Content-Type",
+              "value": "text/plain; charset=utf-8"
+            }
+          ],
           "content": {
             "size": -1,
-            "mimeType": "application/octet-stream"
+            "mimeType": "text/plain; charset=utf-8",
+            "text": "--dropped--"
           },
           "redirectURL": "",
-          "headersSize": 0,
-          "bodySize": -1
+          "headersSize": 61,
+          "bodySize": 40
         },
         "cache": {},
         "timings": {
@@ -52,10 +75,9 @@
           "wait": -1,
           "receive": -1
         },
-        "serverIPAddress": "test.com",
-        "connection": "8080"
+        "serverIPAddress": "test.com"
       }
     ],
-    "comment": "request capture for http://test.com:8080/test"
+    "comment": "request capture for http://localhost/test"
   }
 }

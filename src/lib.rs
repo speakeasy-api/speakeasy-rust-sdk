@@ -64,6 +64,3 @@ impl From<Config> for RequestConfig {
         }
     }
 }
-
-#[cfg(test)]
-mod actix3_integration_test;

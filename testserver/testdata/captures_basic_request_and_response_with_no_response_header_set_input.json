@@ -1,18 +1,18 @@
 {
-  "name": "captures basic request and response",
+  "name": "captures basic request and response with no response header set",
   "fields": {
     "max_capture_size": 9437184
   },
   "args": {
     "method": "GET",
-    "url": "http://test.com/test",
-    "response_status": 200,
-    "response_body": "test",
+    "url": "http://localhost/test",
     "headers": [
       { "key": "Host", "values": ["test.com"] },
       { "key": "Accept-Encoding", "values": ["gzip, deflate"] },
       { "key": "Connection", "values": ["close"] }
     ],
+    "response_status": -1,
+    "response_body": "test",
     "response_headers": [
       { "key": "Content-Type", "values": ["application/octet-stream"] },
       { "key": "Content-Length", "values": ["4"] }

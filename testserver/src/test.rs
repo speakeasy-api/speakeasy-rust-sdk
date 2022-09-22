@@ -100,12 +100,6 @@ fn integration_tests() {
                     .collect::<Vec<_>>()
             );
 
-            // check request body size
-            assert_eq!(
-                got_har_entry.request.body_size,
-                want_har_entry.request.body_size.max(0)
-            );
-
             let mut got_cookies = got_har_entry.request.cookies.clone();
             got_cookies.sort_by_key(|h| h.name.clone());
 
@@ -130,10 +124,13 @@ fn integration_tests() {
                     .collect::<Vec<_>>()
             );
 
+            // check request body size
+            assert_eq!(
+                got_har_entry.request.body_size,
+                want_har_entry.request.body_size
+            );
             assert_eq!(got_har_entry.request.method, want_har_entry.request.method);
-
             assert_eq!(got_har_entry.request.url, want_har_entry.request.url);
-
             assert_eq!(
                 got_har_entry.server_ip_address,
                 want_har_entry.server_ip_address

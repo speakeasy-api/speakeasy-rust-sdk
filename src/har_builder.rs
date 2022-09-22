@@ -98,6 +98,16 @@ impl HarBuilder {
             path
         };
 
+        let body_size = if self.request.body == BodyCapture::Empty {
+            -1
+        } else {
+            self.request
+                .headers
+                .get(http::header::CONTENT_LENGTH)
+                .and_then(|v| v.to_str().unwrap().parse::<i64>().ok())
+                .unwrap_or(-1)
+        };
+
         HarRequest {
             method: self.request.method.clone(),
             url,
@@ -106,12 +116,7 @@ impl HarBuilder {
             headers: self.build_request_headers(&masking.request_header_mask),
             query_string: self.build_query_string(&masking.query_string_mask),
             headers_size: format!("{:?}", &self.request.headers).len() as i64,
-            body_size: self
-                .request
-                .headers
-                .get(http::header::CONTENT_LENGTH)
-                .and_then(|v| v.to_str().unwrap().parse::<i64>().ok())
-                .unwrap_or(-1),
+            body_size,
             post_data: self.build_body_post_data(&masking.request_masks),
             comment: None,
         }

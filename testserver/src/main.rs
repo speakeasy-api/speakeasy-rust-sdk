@@ -10,8 +10,8 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use speakeasy_protos::ingest::IngestRequest;
 use speakeasy_rust_sdk::{
-    middleware::actix3::Middleware, sdk, transport::Transport, Config, MiddlewareController,
-    StringMaskingOption,
+    middleware::actix3::Middleware, sdk, transport::Transport, Config, Masking,
+    MiddlewareController, StringMaskingOption,
 };
 
 const TEST_NAME_HEADER: &str = "x-speakeasy-test-name";
@@ -61,6 +61,24 @@ pub struct Args {
     response_body: Option<String>,
     #[serde(default)]
     response_headers: Option<Vec<Header>>,
+    #[serde(default)]
+    query_string_masks: Option<HashMap<String, String>>,
+    #[serde(default)]
+    response_header_masks: Option<HashMap<String, String>>,
+    #[serde(default)]
+    response_cookie_masks: Option<HashMap<String, String>>,
+    #[serde(default)]
+    request_field_masks_string: Option<HashMap<String, String>>,
+    #[serde(default)]
+    request_field_masks_number: Option<HashMap<String, String>>,
+    #[serde(default)]
+    request_header_masks: Option<HashMap<String, String>>,
+    #[serde(default)]
+    request_cookie_masks: Option<HashMap<String, String>>,
+    #[serde(default)]
+    response_field_masks_string: Option<HashMap<String, String>>,
+    #[serde(default)]
+    response_field_masks_number: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -91,7 +109,10 @@ async fn index_get(
         .to_str()
         .unwrap();
 
-    let test_inputs = test_data.0.clone();
+    let test_input = test_data.0.clone().get(test_name).unwrap().clone();
+    let masking = build_masking(test_input);
+
+    controller.set_masking(masking).await;
 
     match text {
         Some(text) => HttpResponse::Ok().body(text),
@@ -99,8 +120,29 @@ async fn index_get(
     }
 }
 
-async fn index_post() -> impl Responder {
-    format!("test")
+async fn index_post(
+    text: Option<String>,
+    req: HttpRequest,
+    controller: ReqData<MiddlewareController>,
+) -> impl Responder {
+    let test_data = &TEST_DATA;
+
+    let test_name = req
+        .headers()
+        .get(TEST_NAME_HEADER)
+        .unwrap()
+        .to_str()
+        .unwrap();
+
+    let test_input = test_data.0.clone().get(test_name).unwrap().clone();
+    let masking = build_masking(test_input);
+
+    controller.set_masking(masking).await;
+
+    match text {
+        Some(text) => HttpResponse::Ok().body(text),
+        None => HttpResponse::Ok().body(""),
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -161,20 +203,7 @@ async fn main() -> std::io::Result<()> {
         let grpc_mock = GrpcMock::new();
 
         // Create a new Speakeasy SDK instance
-        let mut sdk = sdk::SpeakeasySdk::new_with_transport(config, grpc_mock);
-
-        // Configure masking for query
-        sdk.masking.with_query_string_mask("secret", "********");
-        sdk.masking
-            .with_query_string_mask("password", StringMaskingOption::default());
-
-        // Configure masking for request
-        sdk.masking
-            .with_request_field_mask_string("password", StringMaskingOption::default());
-
-        // Configure masking for response
-        sdk.masking
-            .with_response_field_mask_string("secret", StringMaskingOption::default());
+        let sdk = sdk::SpeakeasySdk::new_with_transport(config, grpc_mock);
 
         let speakeasy_middleware = Middleware::new(sdk);
         let (request_capture, response_capture) = speakeasy_middleware.init();
@@ -190,6 +219,107 @@ async fn main() -> std::io::Result<()> {
     .unwrap()
     .run()
     .await
+}
+
+fn build_masking(input: TestInput) -> Masking {
+    let mut masking = Masking::default();
+
+    if let Some(query_string_masks) = input.args.query_string_masks {
+        masking.with_query_string_mask(
+            query_string_masks.keys().cloned().collect::<Vec<String>>(),
+            query_string_masks,
+        )
+    }
+
+    if let Some(request_header_masks) = input.args.request_header_masks {
+        masking.with_request_header_mask(
+            request_header_masks
+                .keys()
+                .cloned()
+                .collect::<Vec<String>>(),
+            request_header_masks,
+        )
+    }
+
+    if let Some(request_cookie_masks) = input.args.request_cookie_masks {
+        masking.with_request_cookie_mask(
+            request_cookie_masks
+                .keys()
+                .cloned()
+                .collect::<Vec<String>>(),
+            request_cookie_masks,
+        )
+    }
+
+    if let Some(request_field_masks_string) = input.args.request_field_masks_string {
+        masking.with_request_field_mask_string(
+            request_field_masks_string
+                .keys()
+                .cloned()
+                .collect::<Vec<String>>(),
+            request_field_masks_string,
+        )
+    }
+
+    if let Some(request_field_masks_number) = input.args.request_field_masks_number {
+        masking.with_request_field_mask_number(
+            request_field_masks_number
+                .keys()
+                .cloned()
+                .collect::<Vec<String>>(),
+            request_field_masks_number
+                .values()
+                .cloned()
+                .map(|n| n.parse().unwrap())
+                .collect::<Vec<i32>>(),
+        )
+    }
+
+    if let Some(response_header_masks) = input.args.response_header_masks {
+        masking.with_response_header_mask(
+            response_header_masks
+                .keys()
+                .cloned()
+                .collect::<Vec<String>>(),
+            response_header_masks,
+        )
+    }
+
+    if let Some(response_cookie_masks) = input.args.response_cookie_masks {
+        masking.with_response_cookie_mask(
+            response_cookie_masks
+                .keys()
+                .cloned()
+                .collect::<Vec<String>>(),
+            response_cookie_masks,
+        )
+    }
+
+    if let Some(response_field_masks_string) = input.args.response_field_masks_string {
+        masking.with_response_field_mask_string(
+            response_field_masks_string
+                .keys()
+                .cloned()
+                .collect::<Vec<String>>(),
+            response_field_masks_string,
+        )
+    }
+
+    if let Some(response_field_masks_number) = input.args.response_field_masks_number {
+        masking.with_response_field_mask_number(
+            response_field_masks_number
+                .keys()
+                .cloned()
+                .collect::<Vec<String>>(),
+            response_field_masks_number
+                .values()
+                .cloned()
+                .map(|n| n.parse().unwrap())
+                .collect::<Vec<i32>>(),
+        )
+    }
+
+    masking
 }
 
 #[cfg(test)]

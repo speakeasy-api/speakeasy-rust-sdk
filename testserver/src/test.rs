@@ -2,7 +2,7 @@ use crate::{get_entry, TestInput, TEST_DATA};
 use actix_web::client::Client;
 use har::{v1_2::Headers, Har};
 use pretty_assertions::assert_eq;
-use std::{collections::HashMap, io::Read};
+use std::{collections::HashMap, io::Read, time::Duration};
 
 #[test]
 fn integration_tests() {
@@ -10,6 +10,10 @@ fn integration_tests() {
 
     system.block_on(async {
         let tests_results_folder = format!("{}/testresults", env!("CARGO_MANIFEST_DIR"));
+
+        std::fs::remove_dir_all(&tests_results_folder).unwrap();
+        std::fs::create_dir(&tests_results_folder).unwrap();
+
         let test_data = &TEST_DATA;
         let test_inputs = test_data.0.clone();
         let test_outputs = test_data.1.clone();
@@ -40,6 +44,9 @@ fn integration_tests() {
                 client.send().await.unwrap()
             };
         }
+
+        // wait for files to be created
+        std::thread::sleep(Duration::from_secs(1));
 
         for (test_name, test_output) in test_outputs {
             println!("checking response for: {}", test_name);

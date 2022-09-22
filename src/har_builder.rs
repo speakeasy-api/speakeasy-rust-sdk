@@ -7,6 +7,7 @@ use har::{
     Har,
 };
 use http::StatusCode;
+use url::Url;
 
 use crate::{
     generic_http::{BodyCapture, GenericRequest, GenericResponse, DROPPED_TEXT},
@@ -25,14 +26,23 @@ use crate::{
 pub struct HarBuilder {
     request: GenericRequest,
     response: GenericResponse,
+
+    // helper to avoid cloning
+    masked_full_url: Option<Url>,
 }
 
 impl HarBuilder {
     pub(crate) fn new(request: GenericRequest, response: GenericResponse) -> Self {
-        Self { request, response }
+        Self {
+            request,
+            response,
+            masked_full_url: None,
+        }
     }
 
-    pub(crate) fn build(self, masking: &Masking) -> Har {
+    pub(crate) fn build(mut self, masking: &Masking) -> Har {
+        self.masked_full_url = self.get_masked_full_url(masking);
+
         Har {
             log: har::Spec::V1_2(Log {
                 creator: Creator {
@@ -42,8 +52,7 @@ impl HarBuilder {
                 },
                 comment: Some(format!(
                     "request capture for {}",
-                    self.request
-                        .full_url
+                    self.masked_full_url
                         .as_ref()
                         .map(|u| u.to_string())
                         .unwrap_or_else(|| self.request.path.clone())
@@ -73,9 +82,25 @@ impl HarBuilder {
     }
 
     fn build_request(&self, masking: &Masking) -> HarRequest {
+        let path = self
+            .masked_full_url
+            .as_ref()
+            .map(|u| u.path().to_string())
+            .unwrap_or_else(|| self.request.path.clone());
+
+        let url = if let Some(query) = self.masked_full_url.as_ref().and_then(|u| u.query()) {
+            if query == "" {
+                path
+            } else {
+                format!("{}?{}", path, query)
+            }
+        } else {
+            path
+        };
+
         HarRequest {
             method: self.request.method.clone(),
-            url: self.request.path.clone(),
+            url,
             http_version: format!("{:?}", self.request.http_version),
             cookies: self.build_request_cookies(&masking.request_cookie_mask),
             headers: self.build_request_headers(&masking.request_header_mask),
@@ -130,9 +155,7 @@ impl HarBuilder {
             .iter()
             .map(|(name, value)| HarHeader {
                 name: name.to_string(),
-                value: masker
-                    .mask(name.as_str(), value.to_str().unwrap_or(""))
-                    .to_string(),
+                value: masker.mask(name.as_str(), value.to_str().unwrap_or("")),
                 comment: None,
             })
             .collect()
@@ -275,5 +298,21 @@ impl HarBuilder {
                 .and_then(|v| v.to_str().unwrap().parse::<i64>().ok())
                 .unwrap_or(-1)
         }
+    }
+
+    fn get_masked_full_url(&self, masking: &Masking) -> Option<Url> {
+        let mut url = self.request.full_url.as_ref()?.clone();
+
+        let queries = url
+            .query_pairs()
+            .map(|(name, value)| {
+                let masked_value = masking.query_string_mask.mask(&name, &value);
+                (name.to_string(), masked_value)
+            })
+            .collect::<Vec<(String, String)>>();
+
+        url.query_pairs_mut().clear().extend_pairs(queries);
+
+        Some(url)
     }
 }

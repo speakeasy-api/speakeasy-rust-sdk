@@ -11,7 +11,7 @@ fn integration_tests() {
     system.block_on(async {
         let tests_results_folder = format!("{}/testresults", env!("CARGO_MANIFEST_DIR"));
 
-        std::fs::remove_dir_all(&tests_results_folder).unwrap();
+        let _ = std::fs::remove_dir_all(&tests_results_folder);
         std::fs::create_dir(&tests_results_folder).unwrap();
 
         let test_data = &TEST_DATA;

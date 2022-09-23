@@ -159,11 +159,6 @@ async fn send(request: IngestRequest, api_key: String) -> Result<(), Error> {
     // NOTE: Using hyper directly as there seems to be a bug with tonic v0.3 throwing
     // an error from rustls. When making the middleware for actix4 we can hopefully
     // avoid doing this and just use the client directly from tonic.
-    let insecure_client = hyper::Client::builder().http2_only(true).build_http();
-
-    let client = hyper::Client::builder()
-        .http2_only(true)
-        .build(hyper_openssl::HttpsConnector::new().expect("Need OpenSSL"));
 
     let uri = hyper::Uri::from_str(&SPEAKEASY_SERVER_URL).unwrap();
     let token = HeaderValue::from_str(&api_key).map_err(Error::InvalidApiKey)?;
@@ -189,8 +184,13 @@ async fn send(request: IngestRequest, api_key: String) -> Result<(), Error> {
         req.headers_mut().insert("x-api-key", token.clone());
 
         if *SPEAKEASY_SERVER_SECURE {
+            let client = hyper::Client::builder()
+                .http2_only(true)
+                .build(hyper_openssl::HttpsConnector::new().expect("Need OpenSSL"));
+
             client.request(req)
         } else {
+            let insecure_client = hyper::Client::builder().http2_only(true).build_http();
             insecure_client.request(req)
         }
     });

@@ -3,10 +3,8 @@ use actix3::dev::{ServiceRequest, ServiceResponse};
 use actix_http::HttpMessage;
 use chrono::Utc;
 
-use super::speakeasy_header_name;
-
 impl GenericRequest {
-    pub fn new(request: &ServiceRequest, body: BodyCapture) -> Self {
+    pub fn new(request: &ServiceRequest, path_hint: Option<String>, body: BodyCapture) -> Self {
         // NOTE IMPORTANT: have to get cookies before getting headers or there will be a BorrowMut
         // already borrowed error from actix
         let cookies = get_request_cookies(request);
@@ -22,7 +20,7 @@ impl GenericRequest {
 
         GenericRequest {
             start_time: Utc::now(),
-            scheme,
+            path_hint,
             full_url,
             method: request.method().to_string(),
             host,
@@ -78,7 +76,6 @@ fn get_response_headers<T>(response: &ServiceResponse<T>) -> http::HeaderMap {
     response
         .headers()
         .iter()
-        .filter(|(k, _)| k != &speakeasy_header_name())
         .map(|(k, v)| (k.clone(), v.clone()))
         .collect()
 }

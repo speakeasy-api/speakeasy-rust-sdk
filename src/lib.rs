@@ -4,11 +4,13 @@ mod masking;
 mod path_hint;
 mod util;
 
+pub(crate) mod controller;
 pub mod middleware;
 
 pub type Masking = masking::Masking;
 pub type StringMaskingOption = masking::StringMaskingOption;
 pub type NumberMaskingOption = masking::NumberMaskingOption;
+pub type MiddlewareController = controller::Controller;
 
 /// Configuration struct for configuring the global speakeasy SDK instance
 #[derive(Debug, Clone)]

@@ -8,21 +8,17 @@ use actix3::web::{Bytes, BytesMut};
 use actix3::{dev::ServiceRequest, dev::ServiceResponse, Error};
 use actix_service::{Service, Transform};
 use futures::future::{ok, Ready};
-use tokio02::sync::mpsc::Sender;
 
 use crate::generic_http::{BodyCapture, GenericResponse};
 use crate::middleware::MAX_SIZE;
-
-use super::{speakeasy_header_name, Message};
+use crate::MiddlewareController;
 
 #[derive(Clone)]
-pub struct SpeakeasySdk {
-    sender: Sender<Message>,
-}
+pub struct SpeakeasySdk {}
 
 impl SpeakeasySdk {
-    pub(crate) fn new(sender: Sender<Message>) -> Self {
-        Self { sender }
+    pub(crate) fn new() -> Self {
+        Self {}
     }
 }
 
@@ -39,16 +35,12 @@ where
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        ok(SpeakeasySdkMiddleware {
-            service,
-            sender: self.sender.clone(),
-        })
+        ok(SpeakeasySdkMiddleware { service })
     }
 }
 
 pub struct SpeakeasySdkMiddleware<S> {
     service: S,
-    sender: Sender<Message>,
 }
 
 impl<S, B> Service for SpeakeasySdkMiddleware<S>
@@ -67,7 +59,6 @@ where
 
     fn call(&mut self, req: ServiceRequest) -> Self::Future {
         WrapperStream {
-            sender: self.sender.clone(),
             fut: self.service.call(req),
             _t: PhantomData,
         }
@@ -80,7 +71,6 @@ where
     B: MessageBody,
     S: Service,
 {
-    sender: Sender<Message>,
     #[pin]
     fut: S::Future,
     _t: PhantomData<(B,)>,
@@ -94,28 +84,19 @@ where
     type Output = Result<ServiceResponse<ResponseWithBodySender<B>>, Error>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let sender = self.sender.clone();
         let res = futures::ready!(self.project().fut.poll(cx));
 
         Poll::Ready(res.map(|res| {
             let generic_response = GenericResponse::new(&res);
 
             res.map_body(move |head, body| {
-                let request_id = head
-                    .headers()
-                    .get(speakeasy_header_name())
-                    .and_then(|request_id| request_id.to_str().ok())
-                    .map(ToString::to_string);
-
-                if request_id.is_some() {
-                    head.headers_mut().remove(speakeasy_header_name())
-                }
+                let ext = head.extensions();
+                let controller = ext.get::<MiddlewareController>().cloned();
 
                 ResponseBody::Body(ResponseWithBodySender {
                     body,
                     generic_response,
-                    request_id,
-                    sender,
+                    controller,
                     body_dropped: false,
                     body_accum: BytesMut::new(),
                 })
@@ -129,8 +110,7 @@ pub struct ResponseWithBodySender<B> {
     #[pin]
     body: ResponseBody<B>,
     generic_response: GenericResponse,
-    request_id: Option<String>,
-    sender: Sender<Message>,
+    controller: Option<MiddlewareController>,
     body_accum: BytesMut,
     body_dropped: bool,
 }
@@ -138,10 +118,10 @@ pub struct ResponseWithBodySender<B> {
 #[pin_project::pinned_drop]
 impl<B> PinnedDrop for ResponseWithBodySender<B> {
     fn drop(self: Pin<&mut Self>) {
-        if let Some(request_id) = &self.request_id {
-            let mut sender = self.sender.clone();
+        if let Some(controller) = &self.controller {
+            let mut sender = controller.sender().clone();
+            let request_id = controller.request_id().clone();
             let mut response = self.generic_response.clone();
-            let request_id = request_id.clone();
 
             // set body field, initialized as empty
             if self.body_dropped {
@@ -152,8 +132,8 @@ impl<B> PinnedDrop for ResponseWithBodySender<B> {
 
             tokio02::task::spawn(async move {
                 sender
-                    .send(super::Message::Response {
-                        request_id: request_id.clone(),
+                    .send(super::MiddlewareMessage::Response {
+                        request_id,
                         response,
                     })
                     .await

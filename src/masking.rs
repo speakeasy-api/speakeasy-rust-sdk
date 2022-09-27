@@ -9,6 +9,8 @@ pub type NumberMaskingOption = option::NumberMaskingOption;
 
 pub(crate) type Fields = fields::Fields;
 
+use log::error;
+
 use self::{
     body_mask::{BodyMask, RequestMask, ResponseMask},
     generic_mask::{
@@ -373,7 +375,7 @@ impl Masking {
             .request_masks
             .set_string_field_masks(fields.into(), masking_option.into())
         {
-            log::error!(
+            error!(
                 "[SpeakeasySDK Internal error] - invalid request field mask string: {}",
                 err
             );
@@ -439,7 +441,7 @@ impl Masking {
             .request_masks
             .set_number_field_masks(fields.into(), masking_option.into())
         {
-            log::error!(
+            error!(
                 "[SpeakeasySDK Internal error] - invalid request field mask string: {}",
                 err
             );
@@ -505,7 +507,7 @@ impl Masking {
             .response_masks
             .set_string_field_masks(fields.into(), masking_option.into())
         {
-            log::error!(
+            error!(
                 "[SpeakeasySDK Internal error] - invalid response field mask string: {}",
                 err
             );
@@ -571,7 +573,7 @@ impl Masking {
             .response_masks
             .set_number_field_masks(fields.into(), masking_option.into())
         {
-            log::error!(
+            error!(
                 "[SpeakeasySDK Internal error] - invalid response field mask string: {}",
                 err
             );

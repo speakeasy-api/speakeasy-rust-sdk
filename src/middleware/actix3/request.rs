@@ -14,21 +14,23 @@ use futures::{
     future::{ok, Future, Ready},
     stream::StreamExt,
 };
-use http::{header::CONTENT_LENGTH, HeaderValue};
+use http::header::CONTENT_LENGTH;
+use log::error;
 use tokio02::sync::mpsc::Sender;
 
 use crate::generic_http::{BodyCapture, GenericRequest};
-use crate::middleware::MAX_SIZE;
+use crate::middleware::{RequestId, MAX_SIZE};
+use crate::{path_hint, MiddlewareController};
 
-use super::{speakeasy_header_name, Message};
+use super::MiddlewareMessage;
 
 #[derive(Clone)]
 pub struct SpeakeasySdk {
-    sender: Sender<Message>,
+    sender: Sender<MiddlewareMessage>,
 }
 
 impl SpeakeasySdk {
-    pub(crate) fn new(sender: Sender<Message>) -> Self {
+    pub(crate) fn new(sender: Sender<MiddlewareMessage>) -> Self {
         Self { sender }
     }
 }
@@ -57,7 +59,7 @@ where
 pub struct SpeakeasySdkMiddleware<S> {
     // This is special: We need this to avoid lifetime issues.
     service: Rc<RefCell<S>>,
-    sender: Sender<Message>,
+    sender: Sender<MiddlewareMessage>,
 }
 
 impl<S, B> Service for SpeakeasySdkMiddleware<S>
@@ -76,7 +78,7 @@ where
     }
 
     fn call(&mut self, mut req: ServiceRequest) -> Self::Future {
-        let request_id = uuid::Uuid::new_v4().to_string();
+        let request_id = RequestId::from(uuid::Uuid::new_v4().to_string());
         let mut svc = self.service.clone();
         let mut sender = self.sender.clone();
 
@@ -87,6 +89,10 @@ where
             let mut body = BodyCapture::Empty;
 
             let headers = req.headers();
+
+            let path_hint = req
+                .match_pattern()
+                .map(|path_hint| path_hint::normalize(&path_hint));
 
             // attempt to content length from headers
             let content_length = headers
@@ -141,27 +147,27 @@ where
             }
 
             // create a new GenericRequest from the ServiceRequest
-            let generic_request = GenericRequest::new(&req, body);
+            let generic_request = GenericRequest::new(&req, path_hint, body);
 
             if let Err(error) = sender
-                .send(Message::Request {
+                .send(MiddlewareMessage::Request {
                     request_id: request_id.clone(),
                     request: generic_request,
                 })
                 .await
             {
-                log::error!(
+                error!(
                     "Failed to send request to channel: {}, id {}",
-                    error,
-                    &request_id
+                    error, &request_id
                 );
             }
 
-            let mut res = svc.call(req).await?;
-            res.headers_mut().insert(
-                speakeasy_header_name(),
-                HeaderValue::from_str(&request_id).unwrap(),
-            );
+            req.extensions_mut().insert(MiddlewareController::new(
+                request_id.clone(),
+                sender.clone(),
+            ));
+
+            let res = svc.call(req).await?;
 
             Ok(res)
         })

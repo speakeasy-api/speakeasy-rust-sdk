@@ -1,12 +1,18 @@
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{
+    get, post,
+    web::{self, ReqData},
+    App, HttpResponse, HttpServer, Responder,
+};
+use log::info;
 use speakeasy_rust_sdk::{
-    middleware::actix3::Middleware, Config, SpeakeasySdk, StringMaskingOption,
+    middleware::actix3::Middleware, Config, Masking, MiddlewareController, SpeakeasySdk,
+    StringMaskingOption,
 };
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 struct Person {
     name: String,
-    number: i32,
+    age: i32,
 }
 
 #[get("/hello/{name}")]
@@ -22,7 +28,7 @@ async fn index(item: web::Json<Person>) -> HttpResponse {
 
 #[post("/upload")]
 async fn upload(item: web::Bytes) -> impl Responder {
-    println!("bytes: {:?}", item.len());
+    println!("bytes length: {:?}", item.len());
     use std::{fs::File, io::Write};
 
     let mut file = File::create("uploads/copied.png").unwrap();
@@ -31,10 +37,31 @@ async fn upload(item: web::Bytes) -> impl Responder {
     format!("Uploaded!")
 }
 
+#[post("/use_controller")]
+async fn use_controller(
+    item: web::Json<Person>,
+    controller: ReqData<MiddlewareController>,
+) -> HttpResponse {
+    println!("json: {:?}", &item);
+
+    // create a specific masking for this request/response
+    let mut masking = Masking::default();
+    masking.with_request_field_mask_string("name", "NoOne");
+    masking.with_response_field_mask_number("age", 22);
+
+    controller.set_path_hint("/use_controller/*").await;
+    controller.set_masking(masking).await;
+    controller
+        .set_customer_id("123customer_id".to_string())
+        .await;
+
+    HttpResponse::Ok().json(item.0)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
-    log::info!("starting HTTP server at http://localhost:8080");
+    info!("starting HTTP server at http://localhost:8080");
 
     HttpServer::new(|| {
         let config = Config {
@@ -65,15 +92,16 @@ async fn main() -> std::io::Result<()> {
             .with_response_field_mask_string("secret", StringMaskingOption::default());
 
         let speakeasy_middleware = Middleware::new(sdk);
-        let (request_capture, response_capture) = speakeasy_middleware.start();
+        let (request_capture, response_capture) = speakeasy_middleware.init();
 
         App::new()
+            .app_data(web::PayloadConfig::new(3_145_728))
             .wrap(request_capture)
             .wrap(response_capture)
-            .app_data(web::PayloadConfig::new(3_145_728))
             .service(greet)
             .service(index)
             .service(upload)
+            .service(use_controller)
     })
     .bind(("127.0.0.1", 8080))?
     .run()

@@ -1,4 +1,4 @@
-# speakeasy-go-sdk
+# speakeasy-rust-sdk
 
 ![180100416-b66263e6-1607-4465-b45d-0e298a67c397](https://user-images.githubusercontent.com/68016351/181640742-31ab234a-3b39-432e-b899-21037596b360.png)
 
@@ -16,10 +16,10 @@ Supported Frameworks:
 
 Available on crates: [crates.io/speakeasy-rust-sdk](https://crates.io/speakeasy-rust-sdk)
 
-Documentation available at: [docs.rs/speakeasy-rust-sdk](<(https://docs.rs/speakeasy-rust-sdk)>)
+Documentation available at: [docs.rs/speakeasy-rust-sdk](https://docs.rs/speakeasy-rust-sdk)
 
 ```toml
-speakeasy-rust-sdk = "0.1.0"
+speakeasy-rust-sdk = {version = "0.1.0", features = ["actix3"]}
 ```
 
 ### Minimum configuration
@@ -218,5 +218,5 @@ For complete docs on masking see the [docs.rs/speakeasy-sdk-rust](https://docs.r
 
 ### Examples
 
-Actix3 - [examples/actix3/](examples/actix3/)
-Actix3 Test Server - [testserver/](testserver/)
+- Actix3 - [examples/actix3/](examples/actix3/)
+- Actix3 Test Server - [testserver/](testserver/)

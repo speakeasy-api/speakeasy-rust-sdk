@@ -1,4 +1,9 @@
-use std::{collections::HashMap, fs::File, io::Write};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::Write,
+    sync::{Arc, RwLock},
+};
 
 use actix_web::{
     web::{self, ReqData},
@@ -10,9 +15,11 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use speakeasy_protos::ingest::IngestRequest;
 use speakeasy_rust_sdk::{
-    middleware::actix3::Middleware, sdk, transport::Transport, Config, Masking,
-    MiddlewareController,
+    controller::Controller, middleware::actix3::Middleware, sdk, transport::Transport, Config,
+    Masking,
 };
+
+type MiddlewareController = Controller<GrpcMock>;
 
 const TEST_NAME_HEADER: &str = "x-speakeasy-test-name";
 
@@ -94,7 +101,10 @@ pub struct TestInput {
     args: Args,
 }
 
-async fn index_get(req: HttpRequest, controller: ReqData<MiddlewareController>) -> impl Responder {
+async fn index_get(
+    req: HttpRequest,
+    controller: ReqData<Arc<RwLock<MiddlewareController>>>,
+) -> impl Responder {
     // get header and apply masking
     let test_data = &TEST_DATA;
 
@@ -109,15 +119,19 @@ async fn index_get(req: HttpRequest, controller: ReqData<MiddlewareController>) 
     let masking = build_masking(test_input.clone());
 
     controller
-        .set_max_capture_size(test_input.fields.max_capture_size as u64)
-        .await;
+        .write()
+        .unwrap()
+        .set_max_capture_size(test_input.fields.max_capture_size as usize);
 
-    controller.set_masking(masking).await;
+    controller.write().unwrap().set_masking(masking);
 
     build_response(test_input)
 }
 
-async fn index_post(req: HttpRequest, controller: ReqData<MiddlewareController>) -> impl Responder {
+async fn index_post(
+    req: HttpRequest,
+    controller: ReqData<Arc<RwLock<MiddlewareController>>>,
+) -> impl Responder {
     let test_data = &TEST_DATA;
 
     let test_name = req
@@ -131,10 +145,11 @@ async fn index_post(req: HttpRequest, controller: ReqData<MiddlewareController>)
     let masking = build_masking(test_input.clone());
 
     controller
-        .set_max_capture_size(test_input.fields.max_capture_size as u64)
-        .await;
+        .write()
+        .unwrap()
+        .set_max_capture_size(test_input.fields.max_capture_size as usize);
 
-    controller.set_masking(masking).await;
+    controller.write().unwrap().set_masking(masking);
 
     build_response(test_input)
 }
@@ -148,13 +163,19 @@ impl GrpcMock {
     }
 }
 
+impl Default for GrpcMock {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Transport for GrpcMock {
     type Output = ();
     type Error = ();
 
     fn send(&self, request: IngestRequest) -> Result<Self::Output, Self::Error> {
         let har: Har = serde_json::from_str(&request.har).unwrap();
-        let test_name = get_test_name(har.clone());
+        let test_name = get_test_name(har);
 
         let test_data_folder = format!("{}/testresults", env!("CARGO_MANIFEST_DIR"));
         let test_result_file = format!("{}/{}.har", test_data_folder, test_name);
@@ -168,7 +189,7 @@ impl Transport for GrpcMock {
 
 pub fn get_log(har: Har) -> Log {
     match har.log {
-        har::Spec::V1_2(log) => log.clone(),
+        har::Spec::V1_2(log) => log,
         har::Spec::V1_3(_) => todo!(),
     }
 }

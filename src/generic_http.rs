@@ -36,7 +36,7 @@ impl GenericCookie {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BodyCapture {
     // drop if > max, max = 1 * 1024 * 1024;
     Empty,

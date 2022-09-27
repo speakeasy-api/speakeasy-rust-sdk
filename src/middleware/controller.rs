@@ -1,21 +1,20 @@
 use std::collections::HashMap;
 
-use crate::{
-    middleware::{
-        messages::{ControllerMessage, MiddlewareMessage},
-        RequestId,
-    },
-    path_hint, Masking, MiddlewareMessageSender,
+use super::{
+    messages::{ControllerMessage, MiddlewareMessage},
+    RequestId,
 };
+use crate::{path_hint, Masking};
+use tokio02::sync::mpsc::Sender;
 
 #[derive(Debug)]
-pub struct ControllerState {
+pub struct State {
     customer_ids: HashMap<RequestId, String>,
     path_hints: HashMap<RequestId, String>,
     masks: HashMap<RequestId, Masking>,
 }
 
-impl ControllerState {
+impl State {
     pub fn new() -> Self {
         Self {
             customer_ids: HashMap::new(),
@@ -38,36 +37,22 @@ impl ControllerState {
             } => {
                 self.path_hints.insert(request_id, path_hint);
             }
-            ControllerMessage::SetCustomerId {
-                request_id,
-                customer_id,
-            } => {
-                self.customer_ids.insert(request_id, customer_id);
-            }
         }
     }
 
     pub(crate) fn get_masking(&mut self, request_id: &RequestId) -> Option<Masking> {
         self.masks.remove(request_id)
     }
-
-    pub(crate) fn get_path_hint(&mut self, request_id: &RequestId) -> Option<String> {
-        self.path_hints.remove(request_id)
-    }
-
-    pub(crate) fn get_customer_id(&mut self, request_id: &RequestId) -> Option<String> {
-        self.customer_ids.remove(request_id)
-    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Controller {
     request_id: RequestId,
-    sender: MiddlewareMessageSender,
+    sender: Sender<MiddlewareMessage>,
 }
 
 impl Controller {
-    pub fn new(request_id: RequestId, sender: MiddlewareMessageSender) -> Self {
+    pub fn new(request_id: RequestId, sender: Sender<MiddlewareMessage>) -> Self {
         Self { request_id, sender }
     }
 
@@ -97,30 +82,5 @@ impl Controller {
             ))
             .await
             .unwrap();
-    }
-
-    pub async fn set_customer_id(&self, customer_id: String) {
-        self.sender
-            .clone()
-            .send(MiddlewareMessage::ControllerMessage(
-                ControllerMessage::SetCustomerId {
-                    request_id: self.request_id.clone(),
-                    customer_id,
-                },
-            ))
-            .await
-            .unwrap();
-    }
-}
-
-// private methods used in middleware
-#[doc(hidden)]
-impl Controller {
-    pub(crate) fn request_id(&self) -> &RequestId {
-        &self.request_id
-    }
-
-    pub(crate) fn sender(&self) -> &MiddlewareMessageSender {
-        &self.sender
     }
 }

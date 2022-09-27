@@ -1,4 +1,4 @@
-use std::{borrow::Cow, marker::PhantomData};
+use std::{borrow::Cow, collections::HashMap, marker::PhantomData};
 
 use regex::{Captures, Regex};
 use std::fmt::Write as _;
@@ -39,6 +39,38 @@ pub(crate) struct BodyMaskInner<T> {
     mask_option: T,
 }
 
+impl From<BodyMaskInner<StringMaskingOption>> for HashMap<String, String> {
+    fn from(mask: BodyMaskInner<StringMaskingOption>) -> Self {
+        mask.fields
+            .into_iter()
+            .map(|(field, index)| {
+                let value = mask
+                    .mask_option
+                    .get_mask_replacement(&field, index)
+                    .to_string();
+
+                (field, value)
+            })
+            .collect()
+    }
+}
+
+impl From<BodyMaskInner<NumberMaskingOption>> for HashMap<String, String> {
+    fn from(mask: BodyMaskInner<NumberMaskingOption>) -> Self {
+        mask.fields
+            .into_iter()
+            .map(|(field, index)| {
+                let value = mask
+                    .mask_option
+                    .get_mask_replacement(&field, Some(index))
+                    .to_string();
+
+                (field, value)
+            })
+            .collect()
+    }
+}
+
 // T = StringMaskingOption or NumberMaskingOption
 impl<T> BodyMaskInner<T> {
     fn new(regex: Regex, fields: Fields, mask_option: T) -> Self {
@@ -51,6 +83,11 @@ impl<T> BodyMaskInner<T> {
 }
 
 impl<T: Default> BodyMask<T> {
+    /// Checks if the masking is empty (not initialized)
+    pub(crate) fn is_empty(&self) -> bool {
+        self.string_masks.is_none() && self.number_masks.is_none()
+    }
+
     /// Creates a BodyMask from a list of string fields to mask
     /// errors if there is a probably creating the Regex
     pub(crate) fn set_string_field_masks(
@@ -171,7 +208,11 @@ impl<T: Default> BodyMask<T> {
         body.to_string()
     }
 
-    // pub(crate) fn set_string_field_names(&self)
+    pub(crate) fn into_metadata(self) -> (HashMap<String, String>, HashMap<String, String>) {
+        let string_masks = self.string_masks.map(|m| m.into()).unwrap_or_default();
+        let number_masks = self.number_masks.map(|m| m.into()).unwrap_or_default();
+        (string_masks, number_masks)
+    }
 }
 
 #[cfg(test)]

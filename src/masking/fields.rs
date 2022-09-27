@@ -65,6 +65,10 @@ impl FieldsSearchMap {
     pub(crate) fn get(&self, field: &str) -> Option<usize> {
         self.0.get(field).copied()
     }
+
+    pub(crate) fn into_iter(self) -> impl Iterator<Item = (String, usize)> {
+        self.0.into_iter()
+    }
 }
 
 #[derive(Debug, Clone)]

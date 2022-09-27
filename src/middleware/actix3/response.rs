@@ -6,7 +6,7 @@ use std::task::{Context, Poll};
 use actix3::body::{BodySize, MessageBody, ResponseBody};
 use actix3::web::{Bytes, BytesMut};
 use actix3::{dev::ServiceRequest, dev::ServiceResponse, Error};
-use actix_service::{Service, Transform};
+use actix_service1::{Service, Transform};
 use futures::future::{ok, Ready};
 
 use crate::generic_http::{BodyCapture, GenericResponse};
@@ -87,12 +87,13 @@ where
         let res = futures::ready!(self.project().fut.poll(cx));
 
         Poll::Ready(res.map(|res| {
+            let ext = res.request().head().extensions();
+            let controller = ext.get::<MiddlewareController>().cloned();
+            drop(ext);
+
             let generic_response = GenericResponse::new(&res);
 
-            res.map_body(move |head, body| {
-                let ext = head.extensions();
-                let controller = ext.get::<MiddlewareController>().cloned();
-
+            res.map_body(move |_head, body| {
                 ResponseBody::Body(ResponseWithBodySender {
                     body,
                     generic_response,

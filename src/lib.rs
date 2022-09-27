@@ -12,13 +12,25 @@ pub type StringMaskingOption = masking::StringMaskingOption;
 pub type NumberMaskingOption = masking::NumberMaskingOption;
 pub type MiddlewareController = controller::Controller;
 
+#[cfg(feature = "tokio02")]
+pub type MiddlewareMessageSender =
+    tokio02::sync::mpsc::Sender<middleware::messages::MiddlewareMessage>;
+
 /// Configuration struct for configuring the global speakeasy SDK instance
 #[derive(Debug, Clone)]
 pub struct Config {
+    /// Retrieve from Speakeasy API dashboard.
     pub api_key: String,
+    /// Name that you'd like to associate captured requests with.
+    ///
+    /// This name will show up in the Speakeasy dashboard. e.g. "PetStore" might be a good ApiID for a Pet Store's API.
+    /// No spaces allowed.
     pub api_id: String,
+    /// Version that you would like to associate captured requests with.
+    ///
+    /// The combination of ApiID (name) and VersionID will uniquely identify your requests in the Speakeasy Dashboard.
+    /// e.g. "v1.0.0". You can have multiple versions for the same ApiID (if running multiple versions of your API)
     pub version_id: String,
-    pub port: i32,
 }
 
 /// Speakeasy SDK instance

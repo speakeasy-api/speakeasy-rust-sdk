@@ -6,7 +6,8 @@ use har::{
     },
     Har,
 };
-use http::StatusCode;
+use http::{HeaderMap, StatusCode};
+use url::Url;
 
 use crate::{
     generic_http::{BodyCapture, GenericRequest, GenericResponse, DROPPED_TEXT},
@@ -25,14 +26,51 @@ use crate::{
 pub struct HarBuilder {
     request: GenericRequest,
     response: GenericResponse,
+
+    max_capture_size: Option<u64>,
+
+    // helper to avoid cloning
+    masked_full_url: Option<Url>,
+    path_with_query: Option<String>,
 }
 
 impl HarBuilder {
-    pub(crate) fn new(request: GenericRequest, response: GenericResponse) -> Self {
-        Self { request, response }
+    pub(crate) fn new(
+        request: GenericRequest,
+        response: GenericResponse,
+        max_capture_size: Option<u64>,
+    ) -> Self {
+        Self {
+            request,
+            response,
+            max_capture_size,
+            masked_full_url: None,
+            path_with_query: None,
+        }
     }
 
-    pub(crate) fn build(self, masking: &Masking) -> Har {
+    pub(crate) fn build(mut self, masking: &Masking) -> Har {
+        self.masked_full_url = self.get_masked_full_url(masking);
+
+        let path = self
+            .masked_full_url
+            .as_ref()
+            .map(|u| u.path().to_string())
+            .unwrap_or_else(|| self.request.path.clone());
+
+        let path_with_query =
+            if let Some(query) = self.masked_full_url.as_ref().and_then(|u| u.query()) {
+                if query.is_empty() {
+                    path
+                } else {
+                    format!("{}?{}", path, query)
+                }
+            } else {
+                path
+            };
+
+        self.path_with_query = Some(path_with_query);
+
         Har {
             log: har::Spec::V1_2(Log {
                 creator: Creator {
@@ -42,11 +80,7 @@ impl HarBuilder {
                 },
                 comment: Some(format!(
                     "request capture for {}",
-                    self.request
-                        .full_url
-                        .as_ref()
-                        .map(|u| u.to_string())
-                        .unwrap_or_else(|| self.request.path.clone())
+                    &self.path_with_query.as_ref().expect("just set above")
                 )),
                 entries: vec![HarEntry {
                     started_date_time: self.request.start_time.to_rfc3339(),
@@ -72,30 +106,63 @@ impl HarBuilder {
         }
     }
 
-    fn build_request(&self, masking: &Masking) -> HarRequest {
+    fn build_request(&mut self, masking: &Masking) -> HarRequest {
+        // drop body if controller was used to set a lower max capture size (request)
+        if let (Some(max_capture_size), BodyCapture::Captured(body)) =
+            (self.max_capture_size, &self.request.body)
+        {
+            if body.len() > max_capture_size as usize {
+                self.request.body = BodyCapture::Dropped
+            }
+        }
+
+        let body_size = if self.request.body == BodyCapture::Empty {
+            -1
+        } else {
+            self.request
+                .headers
+                .get(http::header::CONTENT_LENGTH)
+                .and_then(|v| v.to_str().unwrap().parse::<i64>().ok())
+                .unwrap_or(-1)
+        };
+
         HarRequest {
             method: self.request.method.clone(),
-            url: self.request.path.clone(),
+            url: self
+                .path_with_query
+                .as_ref()
+                .expect("path_with_query should be set")
+                .clone(),
             http_version: format!("{:?}", self.request.http_version),
             cookies: self.build_request_cookies(&masking.request_cookie_mask),
             headers: self.build_request_headers(&masking.request_header_mask),
             query_string: self.build_query_string(&masking.query_string_mask),
-            headers_size: format!("{:?}", &self.request.headers).len() as i64,
-            body_size: self
-                .request
-                .headers
-                .get(http::header::CONTENT_LENGTH)
-                .and_then(|v| v.to_str().unwrap().parse::<i64>().ok())
-                .unwrap_or(-1),
+            headers_size: build_headers_size(&self.request.headers),
+            body_size,
             post_data: self.build_body_post_data(&masking.request_masks),
             comment: None,
         }
     }
 
-    fn build_response(&self, masking: &Masking) -> HarResponse {
+    fn build_response(&mut self, masking: &Masking) -> HarResponse {
+        // drop body if controller was used to set a lower max capture size (response)
+        if let (Some(max_capture_size), BodyCapture::Captured(body)) =
+            (self.max_capture_size, &self.response.body)
+        {
+            if body.len() > max_capture_size as usize {
+                self.response.body = BodyCapture::Dropped
+            }
+        }
+
         HarResponse {
             status: self.response.status.as_u16() as i64,
-            status_text: self.response.status.to_string(),
+            status_text: self
+                .response
+                .status
+                .canonical_reason()
+                .as_ref()
+                .map(ToString::to_string)
+                .unwrap_or_else(|| self.response.status.to_string()),
             http_version: format!("{:?}", &self.response.http_version),
             cookies: self.build_response_cookies(&masking.response_cookie_mask),
             headers: self.build_response_headers(&masking.response_header_mask),
@@ -105,8 +172,9 @@ impl HarBuilder {
                 .headers
                 .get("location")
                 .and_then(|v| v.to_str().ok())
+                .filter(|v| !v.is_empty())
                 .map(ToString::to_string),
-            headers_size: format!("{:?}", &self.response.headers).len() as i64,
+            headers_size: build_headers_size(&self.response.headers),
             body_size: self.build_response_body_size(),
             comment: None,
         }
@@ -115,12 +183,9 @@ impl HarBuilder {
     fn build_request_cookies(&self, masker: &GenericMask<RequestCookieMask>) -> Vec<HarCookie> {
         self.request
             .cookies
-            .iter()
-            .map(|cookie| HarCookie {
-                name: cookie.name.clone(),
-                value: masker.mask(&cookie.name, &cookie.value),
-                ..Default::default()
-            })
+            .clone()
+            .into_iter()
+            .map(|c| c.into_har_cookie(masker))
             .collect()
     }
 
@@ -170,7 +235,7 @@ impl HarBuilder {
 
                 let body_str = String::from_utf8_lossy(text);
 
-                let body_string = if content_type == "application/json" {
+                let body_string = if content_type.contains("application/json") {
                     masker.mask(&body_str)
                 } else {
                     body_str.to_string()
@@ -179,6 +244,7 @@ impl HarBuilder {
                 Some(PostData {
                     mime_type: content_type.to_string(),
                     text: Some(body_string),
+                    params: Some(vec![]),
                     ..Default::default()
                 })
             }
@@ -193,6 +259,7 @@ impl HarBuilder {
                 Some(PostData {
                     mime_type: content_type.to_string(),
                     text: Some(DROPPED_TEXT.to_string()),
+                    params: Some(vec![]),
                     ..Default::default()
                 })
             }
@@ -202,12 +269,9 @@ impl HarBuilder {
     fn build_response_cookies(&self, masker: &GenericMask<ResponseCookieMask>) -> Vec<HarCookie> {
         self.response
             .cookies
-            .iter()
-            .map(|cookie| HarCookie {
-                name: cookie.name.clone(),
-                value: masker.mask(&cookie.name, &cookie.value),
-                ..Default::default()
-            })
+            .clone()
+            .into_iter()
+            .map(|c| c.into_har_cookie(masker))
             .collect()
     }
 
@@ -232,7 +296,7 @@ impl HarBuilder {
             .unwrap_or("application/octet-stream")
             .to_string();
 
-        match self.request.body {
+        match self.response.body {
             BodyCapture::Empty => Content {
                 size: -1,
                 mime_type: Some(mime_type),
@@ -247,7 +311,7 @@ impl HarBuilder {
             BodyCapture::Captured(ref text) => {
                 let body_str = String::from_utf8_lossy(text);
 
-                let body_string = if &mime_type == "application/json" {
+                let body_string = if mime_type.contains("application/json") {
                     masker.mask(&body_str)
                 } else {
                     body_str.to_string()
@@ -274,4 +338,38 @@ impl HarBuilder {
                 .unwrap_or(-1)
         }
     }
+
+    fn get_masked_full_url(&self, masking: &Masking) -> Option<Url> {
+        let mut url = self.request.full_url.as_ref()?.clone();
+
+        let queries = url
+            .query_pairs()
+            .map(|(name, value)| {
+                let masked_value = masking.query_string_mask.mask(&name, &value);
+                (name.to_string(), masked_value)
+            })
+            .collect::<Vec<(String, String)>>();
+
+        url.query_pairs_mut().clear().extend_pairs(queries);
+
+        Some(url)
+    }
+}
+
+fn build_headers_size(headers: &HeaderMap) -> i64 {
+    let mut headers_size = 0;
+    for (name, value) in headers.iter() {
+        headers_size += name.as_str().len();
+        headers_size += value.len();
+
+        // : + space + \r\n
+        headers_size += 4;
+    }
+
+    if headers.len() > 1 {
+        // drop the last new line
+        headers_size -= 1;
+    }
+
+    headers_size as i64
 }

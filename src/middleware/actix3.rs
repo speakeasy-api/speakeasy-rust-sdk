@@ -3,21 +3,26 @@ mod request_response_impl;
 pub mod request;
 pub mod response;
 
-use tokio02::sync::mpsc::Receiver;
-
 use super::{messages::MiddlewareMessage, State};
-use crate::SpeakeasySdk;
+use crate::{
+    async_runtime::{self, Receiver},
+    sdk::SpeakeasySdk,
+    transport::Transport,
+};
 
-pub struct Middleware {
-    state: State,
+pub struct Middleware<T: Transport> {
+    state: State<T>,
     receiver: Receiver<MiddlewareMessage>,
     pub request_capture: request::SpeakeasySdk,
     pub response_capture: response::SpeakeasySdk,
 }
 
-impl Middleware {
-    pub fn new(sdk: SpeakeasySdk) -> Self {
-        let (sender, receiver) = tokio02::sync::mpsc::channel(100);
+impl<T> Middleware<T>
+where
+    T: Transport + Clone + Send + 'static,
+{
+    pub fn new(sdk: SpeakeasySdk<T>) -> Self {
+        let (sender, receiver) = async_runtime::channel(100);
 
         Self {
             state: State::new(sdk),

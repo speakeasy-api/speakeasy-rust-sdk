@@ -1,0 +1,21 @@
+{
+  "name": "captures query params",
+  "fields": {
+    "max_capture_size": 9437184
+  },
+  "args": {
+    "method": "GET",
+    "url": "http://localhost:8080/test?param1=value1",
+    "headers": [
+      { "key": "Host", "values": ["test.com"] },
+      { "key": "Accept-Encoding", "values": ["gzip, deflate"] },
+      { "key": "Connection", "values": ["close"] }
+    ],
+    "response_status": 200,
+    "response_body": "test",
+    "response_headers": [
+      { "key": "Content-Type", "values": ["text/plain; charset=utf-8"] },
+      { "key": "Content-Length", "values": ["4"] }
+    ]
+  }
+}

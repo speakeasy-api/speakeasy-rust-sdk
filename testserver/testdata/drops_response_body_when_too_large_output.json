@@ -1,0 +1,83 @@
+{
+  "log": {
+    "version": "1.2",
+    "creator": {
+      "name": "speakeasy-rust-sdk",
+      "version": "0.1.0"
+    },
+    "entries": [
+      {
+        "startedDateTime": "2020-01-01T00:00:00Z",
+        "time": 1,
+        "request": {
+          "method": "POST",
+          "url": "/test",
+          "httpVersion": "HTTP/1.1",
+          "cookies": [],
+          "headers": [
+            {
+              "name": "accept-encoding",
+              "value": "gzip, deflate"
+            },
+            {
+              "name": "connection",
+              "value": "close"
+            },
+            {
+              "name": "content-length",
+              "value": "10"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            },
+            {
+              "name": "host",
+              "value": "test.com"
+            }
+          ],
+          "queryString": [],
+          "postData": {
+            "mimeType": "application/json",
+            "params": [],
+            "text": "{\"a\": \"b\"}"
+          },
+          "headersSize": 119,
+          "bodySize": 10
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "cookies": [],
+          "headers": [
+            {
+              "name": "content-length",
+              "value": "40"
+            },
+            {
+              "name": "content-type",
+              "value": "text/plain; charset=utf-8"
+            }
+          ],
+          "content": {
+            "size": -1,
+            "mimeType": "text/plain; charset=utf-8",
+            "text": "--dropped--"
+          },
+          "redirectURL": "",
+          "headersSize": 61,
+          "bodySize": 40
+        },
+        "cache": {},
+        "timings": {
+          "send": -1,
+          "wait": -1,
+          "receive": -1
+        },
+        "serverIPAddress": "test.com"
+      }
+    ],
+    "comment": "request capture for /test"
+  }
+}

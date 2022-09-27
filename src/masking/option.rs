@@ -145,16 +145,12 @@ impl From<HashMap<&str, i32>> for NumberMaskingOption {
 }
 
 impl NumberMaskingOption {
-    pub(crate) fn get_mask_replacement(&self, field: &str, maybe_index: Option<usize>) -> i32 {
+    pub(crate) fn get_mask_replacement(&self, field: &str, index: usize) -> i32 {
         match self {
             Self::None => DEFAULT_NUMBER_MASK,
             Self::SingleMask(mask) => *mask,
             Self::MultipleMasks(ref masks) => {
-                if let Some(index) = maybe_index {
-                    masks.get(index).copied().unwrap_or(DEFAULT_NUMBER_MASK)
-                } else {
-                    DEFAULT_NUMBER_MASK
-                }
+                masks.get(index).copied().unwrap_or(DEFAULT_NUMBER_MASK)
             }
             Self::AssociatedMasks(ref masks_map) => {
                 masks_map.get(field).copied().unwrap_or(DEFAULT_NUMBER_MASK)

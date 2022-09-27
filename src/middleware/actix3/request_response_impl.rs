@@ -1,10 +1,15 @@
 use crate::generic_http::{BodyCapture, GenericCookie, GenericRequest, GenericResponse};
 use actix3::dev::{ServiceRequest, ServiceResponse};
-use actix_http2::HttpMessage;
-use chrono::Utc;
+use actix_http2::{http::Cookie, HttpMessage};
+use chrono::{DateTime, NaiveDateTime, Utc};
 
 impl GenericRequest {
-    pub fn new(request: &ServiceRequest, path_hint: Option<String>, body: BodyCapture) -> Self {
+    pub fn new(
+        request: &ServiceRequest,
+        start_time: DateTime<Utc>,
+        path_hint: Option<String>,
+        body: BodyCapture,
+    ) -> Self {
         // NOTE IMPORTANT: have to get cookies before getting headers or there will be a BorrowMut
         // already borrowed error from actix
         let cookies = get_request_cookies(request);
@@ -19,7 +24,7 @@ impl GenericRequest {
         let port = full_url.as_ref().and_then(|u| u.port());
 
         GenericRequest {
-            start_time: Utc::now(),
+            start_time,
             path_hint,
             full_url,
             method: request.method().to_string(),
@@ -44,13 +49,7 @@ fn get_request_headers(request: &ServiceRequest) -> http::HeaderMap {
 
 fn get_request_cookies(cookies: &ServiceRequest) -> Vec<GenericCookie> {
     if let Ok(cookies) = &cookies.cookies() {
-        cookies
-            .iter()
-            .map(|cookie| GenericCookie {
-                name: cookie.name().to_string(),
-                value: cookie.value().to_string(),
-            })
-            .collect()
+        cookies.iter().cloned().map(Into::into).collect()
     } else {
         vec![]
     }
@@ -81,14 +80,30 @@ fn get_response_headers<T>(response: &ServiceResponse<T>) -> http::HeaderMap {
 }
 
 fn get_response_cookies<T>(response: &ServiceResponse<T>) -> Vec<GenericCookie> {
-    let mut cookies = Vec::new();
+    let mut cookies: Vec<GenericCookie> = Vec::new();
 
     for cookie in response.response().cookies() {
-        cookies.push(GenericCookie {
-            name: cookie.name().to_string(),
-            value: cookie.value().to_string(),
-        })
+        cookies.push(cookie.into())
     }
 
     cookies
+}
+
+impl<'a> From<Cookie<'a>> for GenericCookie {
+    fn from(cookie: Cookie<'a>) -> Self {
+        GenericCookie {
+            name: cookie.name().to_string(),
+            value: cookie.value().to_string(),
+            path: cookie.path().map(ToString::to_string),
+            domain: cookie.domain().map(ToString::to_string),
+            expires: cookie.expires().map(|dt| {
+                DateTime::<Utc>::from_utc(
+                    NaiveDateTime::from_timestamp(dt.unix_timestamp(), 0),
+                    Utc,
+                )
+            }),
+            http_only: cookie.http_only(),
+            secure: cookie.secure(),
+        }
+    }
 }

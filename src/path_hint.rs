@@ -32,7 +32,7 @@ pub fn normalize(path_hint: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pretty_assertions::{assert_eq, assert_ne};
+    use pretty_assertions::assert_eq;
 
     struct Test {
         #[allow(dead_code)]
@@ -82,10 +82,7 @@ mod tests {
         ];
 
         for test in tests {
-            assert_eq!(
-                normalize_path_hint(test.path_hint.to_string()),
-                test.expected
-            );
+            assert_eq!(normalize(test.path_hint), test.expected);
         }
     }
 }

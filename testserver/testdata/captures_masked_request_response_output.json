@@ -1,0 +1,155 @@
+{
+  "log": {
+    "version": "1.2",
+    "creator": {
+      "name": "speakeasy-rust-sdk",
+      "version": "0.1.0"
+    },
+    "entries": [
+      {
+        "startedDateTime": "2020-01-01T00:00:00Z",
+        "time": 1,
+        "request": {
+          "method": "POST",
+          "url": "/test?querytest1=test1\u0026querytest2=__masked__\u0026querytest3=_____",
+          "httpVersion": "HTTP/1.1",
+          "cookies": [
+            { 
+              "name": "cookie1",
+              "value": "value1"
+            },
+            { 
+              "name": "cookie2",
+              "value": "__masked__" 
+            },
+            { 
+              "name": "cookie3",
+              "value": "_____"
+            }
+          ],
+          "headers": [
+            {
+              "name": "accept-encoding", 
+              "value": "gzip, deflate" 
+            },
+            {
+              "name": "authorization",
+              "value": "_____"
+            },
+            {
+              "name": "connection",
+              "value": "close"
+            },
+            {
+              "name": "content-length",
+              "value": "103"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            },
+            {
+              "name": "cookie",
+              "value": "cookie1=value1; cookie2=value2; cookie3=value3"
+            },
+            {
+              "name": "host",
+              "value": "__masked__"
+            }
+          ],
+          "queryString": [
+            {
+              "name": "querytest1",
+              "value": "test1"
+            },
+            {
+              "name": "querytest2",
+              "value": "__masked__"
+            },
+            {
+              "name": "querytest3",
+              "value": "_____"
+            }
+          ],
+          "postData": {
+            "mimeType": "application/json",
+            "params": [],
+            "text": "{\"test\": \"test\", \"test1\": -12321, \"address\": {\"line1\": \"__masked__\", \"line2\": \"line2\", \"street\": \"_____\"}}"
+          },
+          "headersSize": 219,
+          "bodySize": 103
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "cookies": [
+            {
+              "name": "cookie1",
+              "value": "value1"
+            },
+            {
+              "name": "cookie2",
+              "value": "__masked__",
+              "expires": "2020-01-01T01:00:00.000Z"
+            },
+            {
+              "name": "cookie3",
+              "value": "_____"
+            }
+          ],
+          "headers": [
+            {
+              "name": "content-length",
+              "value": "129"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "name": "session",
+              "value": "_____"
+            },
+            {
+              "name": "set-cookie",
+              "value": "cookie1=value1"
+            },
+            {
+              "name": "set-cookie",
+              "value": "cookie2=value2; Max-Age=3600"
+            },
+            {
+              "name": "set-cookie",
+              "value": "cookie3=value3"
+            },
+            {
+              "name": "x-custom-header",
+              "value": "__masked__"
+            },
+            {
+              "name": "x-custom-header",
+              "value": "__masked__"
+            },
+            {
+              "name": "x-custom-header",
+              "value": "__masked__"
+            }
+          ],
+          "content": {
+            "size": 134,
+            "mimeType": "application/json; charset=utf-8",
+            "text": "{\r\n  \"test\": \"test\",\r\n  \"test1\": -12321,\r\n  \"address\":{\r\n    \"line1\": \"__masked__\",\r\n    \"line2\": \"line2\",\r\n    \"street\": \"_____\"\r\n  }\r\n}"
+          },
+          "redirectURL": "",
+          "headersSize": 249,
+          "bodySize": 129
+        },
+        "cache": {},
+        "timings": { "send": -1, "wait": -1, "receive": -1 },
+        "serverIPAddress": "test.com"
+      }
+    ],
+    "comment": "request capture for /test?querytest1=test1\u0026querytest2=__masked__\u0026querytest3=_____"
+  }
+}

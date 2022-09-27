@@ -10,6 +10,7 @@ use crate::{
 
 #[derive(Debug)]
 pub struct ControllerState {
+    max_capture_sizes: HashMap<RequestId, u64>,
     customer_ids: HashMap<RequestId, String>,
     path_hints: HashMap<RequestId, String>,
     masks: HashMap<RequestId, Masking>,
@@ -18,9 +19,10 @@ pub struct ControllerState {
 impl ControllerState {
     pub fn new() -> Self {
         Self {
-            customer_ids: HashMap::new(),
-            path_hints: HashMap::new(),
             masks: HashMap::new(),
+            path_hints: HashMap::new(),
+            customer_ids: HashMap::new(),
+            max_capture_sizes: HashMap::new(),
         }
     }
 
@@ -44,6 +46,12 @@ impl ControllerState {
             } => {
                 self.customer_ids.insert(request_id, customer_id);
             }
+            ControllerMessage::SetMaxCaptureSize {
+                request_id,
+                capture_size,
+            } => {
+                self.max_capture_sizes.insert(request_id, capture_size);
+            }
         }
     }
 
@@ -57,6 +65,10 @@ impl ControllerState {
 
     pub(crate) fn get_customer_id(&mut self, request_id: &RequestId) -> Option<String> {
         self.customer_ids.remove(request_id)
+    }
+
+    pub(crate) fn get_max_capture_size(&mut self, request_id: &RequestId) -> Option<u64> {
+        self.max_capture_sizes.remove(request_id)
     }
 }
 
@@ -106,6 +118,19 @@ impl Controller {
                 ControllerMessage::SetCustomerId {
                     request_id: self.request_id.clone(),
                     customer_id,
+                },
+            ))
+            .await
+            .unwrap();
+    }
+
+    pub async fn set_max_capture_size(&self, capture_size: u64) {
+        self.sender
+            .clone()
+            .send(MiddlewareMessage::ControllerMessage(
+                ControllerMessage::SetMaxCaptureSize {
+                    request_id: self.request_id.clone(),
+                    capture_size,
                 },
             ))
             .await

@@ -1,0 +1,35 @@
+{
+  "name": "captures cookies",
+  "fields": {
+    "max_capture_size": 9437184
+  },
+  "args": {
+    "method": "GET",
+    "url": "http://localhost:8080/test",
+    "headers": [
+      { "key": "Cookie", "values": ["cookie1=value1; cookie2=value2"] },
+      { "key": "Host", "values": ["test.com"] },
+      { "key": "Accept-Encoding", "values": ["gzip, deflate"] },
+      { "key": "Connection", "values": ["close"] }
+    ],
+    "response_status": 200,
+    "response_body": "test",
+    "response_headers": [
+      {
+        "key": "Set-Cookie",
+        "values": [
+          "cookie1=value1",
+          "cookie2=value2; Max-Age=3600",
+          "cookie3=value3; Expires=Wed, 21 Oct 2015 07:28:00 GMT",
+          "cookie4=value4; Domain=test.com",
+          "cookie5=value5; Path=/test",
+          "cookie6=value6; Secure",
+          "cookie7=value7; HttpOnly",
+          "cookie8=value8; Max-Age=3600; Domain=test.com; Path=/test; Secure; HttpOnly"
+        ]
+      },
+      { "key": "Content-Type", "values": ["text/plain; charset=utf-8"] },
+      { "key": "Content-Length", "values": ["4"] }
+    ]
+  }
+}

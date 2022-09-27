@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::util;
 
-use super::{fields::FieldsSearchMap, Fields, NumberMaskingOption, StringMaskingOption};
+use super::{fields::BodyMaskFieldsSearchMap, Fields, NumberMaskingOption, StringMaskingOption};
 
 /// Errors for creating BodyMasks
 #[derive(Debug, Error)]
@@ -35,7 +35,7 @@ pub(crate) struct BodyMask<T> {
 #[derive(Debug, Clone)]
 pub(crate) struct BodyMaskInner<T> {
     regex: Regex,
-    fields: FieldsSearchMap,
+    fields: BodyMaskFieldsSearchMap,
     mask_option: T,
 }
 
@@ -43,13 +43,13 @@ impl From<BodyMaskInner<StringMaskingOption>> for HashMap<String, String> {
     fn from(mask: BodyMaskInner<StringMaskingOption>) -> Self {
         mask.fields
             .into_iter()
-            .map(|(field, index)| {
+            .map(|(_field, (field_without_quotes, index))| {
                 let value = mask
                     .mask_option
-                    .get_mask_replacement(&field, index)
+                    .get_mask_replacement(&field_without_quotes, index)
                     .to_string();
 
-                (field, value)
+                (field_without_quotes, value)
             })
             .collect()
     }
@@ -59,13 +59,13 @@ impl From<BodyMaskInner<NumberMaskingOption>> for HashMap<String, String> {
     fn from(mask: BodyMaskInner<NumberMaskingOption>) -> Self {
         mask.fields
             .into_iter()
-            .map(|(field, index)| {
+            .map(|(_field, (field_without_quotes, index))| {
                 let value = mask
                     .mask_option
-                    .get_mask_replacement(&field, Some(index))
+                    .get_mask_replacement(&field_without_quotes, index)
                     .to_string();
 
-                (field, value)
+                (field_without_quotes, value)
             })
             .collect()
     }
@@ -164,10 +164,12 @@ impl<T: Default> BodyMask<T> {
         let body = if let Some(body_mask) = &self.string_masks {
             body_mask.regex.replace_all(body, |caps: &Captures| {
                 if let Some(field) = util::get_first_capture(caps) {
-                    let replacement_mask = body_mask.mask_option.get_mask_replacement(
-                        field,
-                        body_mask.fields.get(field).unwrap_or_default(),
-                    );
+                    let (field_without_quotes, index) =
+                        body_mask.fields.get(field).unwrap_or_default();
+
+                    let replacement_mask = body_mask
+                        .mask_option
+                        .get_mask_replacement(&field_without_quotes, index);
 
                     format!(
                         r#"{}: "{}"{}"#,
@@ -187,9 +189,12 @@ impl<T: Default> BodyMask<T> {
         let body = if let Some(body_mask) = &self.number_masks {
             body_mask.regex.replace_all(&body, |caps: &Captures| {
                 if let Some(field) = util::get_first_capture(caps) {
+                    let (field_without_quotes, index) =
+                        body_mask.fields.get(field).unwrap_or_default();
+
                     let replacement_mask = body_mask
                         .mask_option
-                        .get_mask_replacement(field, body_mask.fields.get(field));
+                        .get_mask_replacement(&field_without_quotes, index);
 
                     format!(
                         r#"{}: {}{}"#,
@@ -221,7 +226,7 @@ mod tests {
     use maplit::hashmap;
     use pretty_assertions::assert_eq;
 
-    impl<T> BodyMask<T> {
+    impl<T: Default> BodyMask<T> {
         /// Create a new BodyMask struct using string_field_names and number_field_names
         /// The regex will be compiled and stored in the struct so it can be used reused, for repeated calls
         pub(crate) fn try_new(

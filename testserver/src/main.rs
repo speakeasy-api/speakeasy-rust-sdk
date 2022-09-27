@@ -225,7 +225,7 @@ async fn main() -> std::io::Result<()> {
         let sdk = GenericSpeakeasySdk::new_with_transport(config, grpc_mock);
 
         let speakeasy_middleware = Middleware::new(sdk);
-        let (request_capture, response_capture) = speakeasy_middleware.init();
+        let (request_capture, response_capture) = speakeasy_middleware.into();
 
         App::new()
             .app_data(web::PayloadConfig::new(3_145_728))

@@ -21,7 +21,7 @@ where
         }
     }
 
-    pub fn init(self) -> (request::SpeakeasySdk<T>, response::SpeakeasySdk<T>) {
+    pub fn into(self) -> (request::SpeakeasySdk<T>, response::SpeakeasySdk<T>) {
         (self.request_capture, self.response_capture)
     }
 }

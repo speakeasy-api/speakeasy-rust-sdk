@@ -115,7 +115,6 @@ impl Transport for GrpcClient {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use har::Har;
 
     #[derive(Debug)]
     pub struct GrpcMock {}
@@ -130,8 +129,7 @@ pub(crate) mod tests {
         type Output = ();
         type Error = ();
 
-        fn send(&self, request: IngestRequest) -> Result<Self::Output, Self::Error> {
-            let har = serde_json::from_str(&request.har).unwrap();
+        fn send(&self, _request: IngestRequest) -> Result<Self::Output, Self::Error> {
             Ok(())
         }
     }

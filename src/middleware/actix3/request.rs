@@ -21,17 +21,17 @@ use http::header::CONTENT_LENGTH;
 use crate::controller::Controller;
 use crate::generic_http::{BodyCapture, GenericRequest};
 use crate::transport::Transport;
-use crate::{path_hint, sdk};
+use crate::{path_hint, GenericSpeakeasySdk};
 #[derive(Clone)]
 pub struct SpeakeasySdk<T: Transport> {
-    sdk: sdk::SpeakeasySdk<T>,
+    sdk: GenericSpeakeasySdk<T>,
 }
 
 impl<T> SpeakeasySdk<T>
 where
     T: Transport + Send + Clone + 'static,
 {
-    pub(crate) fn new(sdk: sdk::SpeakeasySdk<T>) -> Self {
+    pub(crate) fn new(sdk: GenericSpeakeasySdk<T>) -> Self {
         Self { sdk }
     }
 }
@@ -61,7 +61,7 @@ where
 pub struct SpeakeasySdkMiddleware<S, T> {
     // This is special: We need this to avoid lifetime issues.
     service: Rc<RefCell<S>>,
-    sdk: crate::sdk::SpeakeasySdk<T>,
+    sdk: GenericSpeakeasySdk<T>,
 }
 
 impl<S, B, T> Service for SpeakeasySdkMiddleware<S, T>

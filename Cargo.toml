@@ -1,9 +1,16 @@
 [package]
+description = "Rust SDK for interacting with the Speakeasy Api platform"
+documentation = "https://docs.rs/speakeasy-rust-sdk"
 edition = "2021"
+homepage = "https://www.speakeasyapi.dev"
+license-file = "LICENSE"
 name = "speakeasy-rust-sdk"
+repository = "https://github.com/speakeasy-api/speakeasy-rust-sdk"
 version = "0.1.0"
 
-[features]
+exclude = [
+  "testserver",
+]
 
 actix3 = [
   "dep:actix3",

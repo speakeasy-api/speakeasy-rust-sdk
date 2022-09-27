@@ -1,5 +1,5 @@
 /**
- * # speakeasy-go-sdk
+ # speakeasy-go-sdk
 
 ![180100416-b66263e6-1607-4465-b45d-0e298a67c397](https://user-images.githubusercontent.com/68016351/181640742-31ab234a-3b39-432e-b899-21037596b360.png)
 
@@ -240,6 +240,9 @@ mod util;
 
 pub(crate) mod async_runtime;
 pub(crate) mod controller;
+
+#[doc(hidden)]
+pub mod speakeasy_protos;
 
 pub mod middleware;
 pub mod sdk;

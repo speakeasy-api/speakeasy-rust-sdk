@@ -11,8 +11,8 @@ pub(crate) type Fields = fields::Fields;
 
 use std::collections::HashMap;
 
+use crate::speakeasy_protos::ingest::ingest_request::MaskingMetadata;
 use log::error;
-use speakeasy_protos::ingest::ingest_request::MaskingMetadata;
 
 use self::{
     body_mask::{BodyMask, RequestMask, ResponseMask},

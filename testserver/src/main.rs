@@ -13,7 +13,7 @@ use actix_web::{
 use har::{v1_2::Log, Har};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use speakeasy_protos::ingest::IngestRequest;
+use speakeasy_rust_sdk::speakeasy_protos::ingest::IngestRequest;
 use speakeasy_rust_sdk::{
     middleware::actix3::Middleware, transport::Transport, Config, GenericController,
     GenericSpeakeasySdk, Masking,

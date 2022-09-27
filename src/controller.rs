@@ -1,7 +1,7 @@
 // 1MB
 pub(crate) const MAX_SIZE: usize = 1024 * 1024;
 
-use speakeasy_protos::ingest::IngestRequest;
+use crate::speakeasy_protos::ingest::IngestRequest;
 
 use crate::{
     async_runtime,

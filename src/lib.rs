@@ -237,8 +237,6 @@ mod util;
 pub(crate) mod async_runtime;
 
 #[doc(hidden)]
-pub mod middleware;
-#[doc(hidden)]
 pub mod sdk;
 #[doc(hidden)]
 pub mod speakeasy_protos;
@@ -247,6 +245,7 @@ pub mod transport;
 
 pub mod controller;
 pub mod masking;
+pub mod middleware;
 
 use http::header::InvalidHeaderValue;
 use thiserror::Error;

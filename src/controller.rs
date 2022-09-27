@@ -1,4 +1,4 @@
-//! Control masking, path_hint and customer-id on a per request basis
+//! Control [masking](Controller::set_masking()), [path_hint](Controller::set_path_hint()) and [customer_id](Controller::set_customer_id()) on a per request basis
 
 // 1MB
 pub(crate) const MAX_SIZE: usize = 1024 * 1024;
@@ -14,7 +14,7 @@ use crate::{
     Error, GenericSpeakeasySdk, Masking, RequestConfig,
 };
 
-/// Control masking, path_hint and customer-id on a per request basis
+/// Control [masking](Controller::set_masking()), [path_hint](Controller::set_path_hint()) and [customer_id](Controller::set_customer_id()) on a per request basis
 #[derive(Debug, Clone)]
 pub struct Controller<T: Transport> {
     transport: T,

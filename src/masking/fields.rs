@@ -81,9 +81,3 @@ impl From<Fields> for GenericMaskFieldsSearchMap {
         )
     }
 }
-
-impl GenericMaskFieldsSearchMap {
-    pub(crate) fn get(&self, field: &str) -> Option<usize> {
-        self.0.get(field).copied()
-    }
-}

@@ -73,24 +73,14 @@ impl From<HashMap<&str, &str>> for StringMaskingOption {
 }
 
 impl StringMaskingOption {
-    pub(crate) fn get_mask_replacement<'a>(
-        &self,
-        field: &'a str,
-        maybe_index: Option<usize>,
-    ) -> &str {
+    pub(crate) fn get_mask_replacement<'a>(&self, field: &'a str, index: usize) -> &str {
         match self {
             Self::None => DEFAULT_STRING_MASK,
             Self::SingleMask(mask) => mask,
-            Self::MultipleMasks(ref masks) => {
-                if let Some(index) = maybe_index {
-                    masks
-                        .get(index)
-                        .map(String::as_str)
-                        .unwrap_or(DEFAULT_STRING_MASK)
-                } else {
-                    DEFAULT_STRING_MASK
-                }
-            }
+            Self::MultipleMasks(ref masks) => masks
+                .get(index)
+                .map(String::as_str)
+                .unwrap_or(DEFAULT_STRING_MASK),
             Self::AssociatedMasks(ref masks_map) => masks_map
                 .get(field)
                 .map(String::as_str)

@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use har::{
     v1_2::{
         Cache, Content, Cookies as HarCookie, Creator, Entries as HarEntry, Headers as HarHeader,
@@ -28,17 +28,11 @@ pub struct HarBuilder {
 }
 
 impl HarBuilder {
-    pub(crate) fn new(
-        request: impl Into<GenericRequest>,
-        response: impl Into<GenericResponse>,
-    ) -> Self {
-        Self {
-            request: request.into(),
-            response: response.into(),
-        }
+    pub(crate) fn new(request: GenericRequest, response: GenericResponse) -> Self {
+        Self { request, response }
     }
 
-    pub(crate) fn build(self, start_time: DateTime<Utc>, masking: &Masking) -> Har {
+    pub(crate) fn build(self, masking: &Masking) -> Har {
         Har {
             log: har::Spec::V1_2(Log {
                 creator: Creator {
@@ -46,11 +40,18 @@ impl HarBuilder {
                     version: env!("CARGO_PKG_VERSION").to_string(),
                     ..Default::default()
                 },
-                comment: Some(format!("request capture for {}", &self.request.full_url)),
+                comment: Some(format!(
+                    "request capture for {}",
+                    self.request
+                        .full_url
+                        .as_ref()
+                        .map(|u| u.to_string())
+                        .unwrap_or_else(|| self.request.path.clone())
+                )),
                 entries: vec![HarEntry {
-                    started_date_time: start_time.to_rfc3339(),
+                    started_date_time: self.request.start_time.to_rfc3339(),
                     time: Utc::now()
-                        .signed_duration_since(start_time)
+                        .signed_duration_since(self.request.start_time)
                         .num_milliseconds()
                         .abs() as f64,
                     request: self.build_request(masking),
@@ -62,7 +63,7 @@ impl HarBuilder {
                         wait: -1.0,
                         ..Default::default()
                     },
-                    server_ip_address: self.request.hostname.clone(),
+                    server_ip_address: Some(self.request.host.clone()),
                     connection: self.request.port.map(|p| p.to_string()),
                     ..Default::default()
                 }],
@@ -74,7 +75,7 @@ impl HarBuilder {
     fn build_request(&self, masking: &Masking) -> HarRequest {
         HarRequest {
             method: self.request.method.clone(),
-            url: self.request.full_url.clone(),
+            url: self.request.path.clone(),
             http_version: format!("{:?}", self.request.http_version),
             cookies: self.build_request_cookies(&masking.request_cookie_mask),
             headers: self.build_request_headers(&masking.request_header_mask),
@@ -139,7 +140,7 @@ impl HarBuilder {
         &self,
         query_string_mask: &GenericMask<QueryStringMask>,
     ) -> Vec<QueryString> {
-        if let Ok(url) = url::Url::parse(&self.request.full_url) {
+        if let Some(url) = &self.request.full_url {
             url.query_pairs()
                 .map(|(name, value)| QueryString {
                     name: name.to_string(),

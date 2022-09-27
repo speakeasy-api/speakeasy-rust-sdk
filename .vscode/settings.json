@@ -1,0 +1,3 @@
+{
+  "rust-analyzer.linkedProjects": ["examples/actix3/Cargo.toml"]
+}

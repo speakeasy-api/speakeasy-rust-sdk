@@ -1,6 +1,4 @@
-/**
- # speakeasy-go-sdk
-
+/*!
 ![180100416-b66263e6-1607-4465-b45d-0e298a67c397](https://user-images.githubusercontent.com/68016351/181640742-31ab234a-3b39-432e-b899-21037596b360.png)
 
 Speakeasy is your API Platform team as a service. Use our drop in SDK to manage all your API Operations including embeds for request logs and usage dashboards, test case generation from traffic, and understanding API drift.
@@ -218,7 +216,7 @@ async fn index(controller: ReqData<Arc<RwLock<MiddlewareController>>>) -> HttpRe
 }
 ```
 
-The `[Masking]` function takes a number of different options to mask sensitive data in the request:
+The [Masking](crate::masking::Masking) struct can be set with a number of different options to mask sensitive data in the request:
 
 - `masking.with_query_string_mask` - **with_query_string_mask** will mask the specified query strings with an optional mask string.
 - `masking.with_request_header_mask` - **with_request_header_mask** will mask the specified request headers with an optional mask string.
@@ -229,43 +227,47 @@ The `[Masking]` function takes a number of different options to mask sensitive d
 - `masking.with_request_field_mask_number` - **with_request_field_mask_number** will mask the specified request body fields with an optional mask. Supports number fields only. Matches using regex.
 - `masking.with_response_field_mask_string` - **with_response_field_mask_string** will mask the specified response body fields with an optional mask. Supports string fields only. Matches using regex.
 - `masking.with_response_field_mask_number` - **with_response_field_mask_number** will mask the specified response body fields with an optional mask. Supports number fields only. Matches using regex.
-
-For complete docs on masking see [Masking]
 */
+
 mod generic_http;
 mod har_builder;
-mod masking;
 mod path_hint;
 mod util;
 
 pub(crate) mod async_runtime;
-pub(crate) mod controller;
 
 #[doc(hidden)]
-pub mod speakeasy_protos;
-
 pub mod middleware;
+#[doc(hidden)]
 pub mod sdk;
+#[doc(hidden)]
+pub mod speakeasy_protos;
+#[doc(hidden)]
 pub mod transport;
+
+pub mod controller;
+pub mod masking;
 
 use http::header::InvalidHeaderValue;
 use thiserror::Error;
 use transport::GrpcClient;
 
+/// All masking options, see functions for more details on setting them
 pub type Masking = masking::Masking;
-pub type StringMaskingOption = masking::StringMaskingOption;
-pub type NumberMaskingOption = masking::NumberMaskingOption;
 
 /// Speakeasy SDK instance and controller
 pub type SpeakeasySdk = GenericSpeakeasySdk<GrpcClient>;
+
+/// Middleware controller, use for setting request specific [Masking], [path-hint](MiddlewareController::set_path_hint()) and [customer-ids](MiddlewareController::set_customer_id())
 pub type MiddlewareController = GenericController<GrpcClient>;
 
-/// Generic structs used to override Grpc transport
 #[doc(hidden)]
+/// Generic structs used to override Grpc transport
 pub type GenericController<T> = controller::Controller<T>;
 #[doc(hidden)]
 pub type GenericSpeakeasySdk<T> = sdk::GenericSpeakeasySdk<T>;
 
+/// General error struct for the crate
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("invalid api key {0}")]

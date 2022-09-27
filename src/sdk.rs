@@ -31,7 +31,7 @@ impl GenericSpeakeasySdk<GrpcClient> {
     ///
     /// # Examples:
     /// ```rust
-    /// use speakeasy_rust_sdk::{SpeakeasySdk, Config, StringMaskingOption};
+    /// use speakeasy_rust_sdk::{SpeakeasySdk, Config, masking::StringMaskingOption};
     ///
     /// let config = Config{
     ///     api_key: "YOUR API KEY HERE".to_string(),       // retrieve from Speakeasy API dashboard.

@@ -1,3 +1,5 @@
+//! Control masking, path_hint and customer-id on a per request basis
+
 // 1MB
 pub(crate) const MAX_SIZE: usize = 1024 * 1024;
 
@@ -12,6 +14,7 @@ use crate::{
     Error, GenericSpeakeasySdk, Masking, RequestConfig,
 };
 
+/// Control masking, path_hint and customer-id on a per request basis
 #[derive(Debug, Clone)]
 pub struct Controller<T: Transport> {
     transport: T,
@@ -31,6 +34,7 @@ impl<T> Controller<T>
 where
     T: Transport + Send + Clone + 'static,
 {
+    #[doc(hidden)]
     pub fn new(sdk: &GenericSpeakeasySdk<T>) -> Self {
         Self {
             transport: sdk.transport.clone(),
@@ -43,19 +47,23 @@ where
         }
     }
 
+    /// Set the path_hint request
     pub fn set_path_hint(&mut self, path_hint: &str) {
         let path_hint = path_hint::normalize(path_hint);
         self.path_hint = Some(path_hint)
     }
 
+    /// Set new masking for the request, see [Masking](crate::masking::Masking) for more
     pub fn set_masking(&mut self, masking: Masking) {
         self.masking = masking
     }
 
+    /// Set new customer_id for the request
     pub fn set_customer_id(&mut self, customer_id: String) {
         self.customer_id = Some(customer_id)
     }
 
+    /// Set new max_capture_size for the request, if the request or response bodies are above this, it will be dropped
     pub fn set_max_capture_size(&mut self, max_capture_size: usize) {
         self.max_capture_size = max_capture_size
     }

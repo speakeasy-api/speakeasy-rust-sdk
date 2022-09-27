@@ -7,8 +7,8 @@ use actix_web::{
 };
 use log::info;
 use speakeasy_rust_sdk::{
-    middleware::actix3::Middleware, Config, Masking, MiddlewareController, SpeakeasySdk,
-    StringMaskingOption,
+    masking::StringMaskingOption, middleware::actix3::Middleware, Config, Masking,
+    MiddlewareController, SpeakeasySdk,
 };
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

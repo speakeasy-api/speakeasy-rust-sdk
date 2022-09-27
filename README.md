@@ -202,7 +202,7 @@ async fn index(controller: ReqData<Arc<RwLock<MiddlewareController>>>) -> HttpRe
 }
 ```
 
-The `Masking` function takes a number of different options to mask sensitive data in the request:
+The `Masking` struct can be set with a number of different options to mask sensitive data in the request:
 
 - `masking.with_query_string_mask` - **with_query_string_mask** will mask the specified query strings with an optional mask string.
 - `masking.with_request_header_mask` - **with_request_header_mask** will mask the specified request headers with an optional mask string.

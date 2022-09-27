@@ -18,6 +18,14 @@ Available on crates: [crates.io/speakeasy-rust-sdk](https://crates.io/speakeasy-
 
 Documentation available at: [docs.rs/speakeasy-rust-sdk](https://docs.rs/speakeasy-rust-sdk)
 
+Run:
+
+```
+cargo add speakeasy-rust-sdk --features actix3
+```
+
+Or add it directly to your `Cargo.toml`
+
 ```toml
 speakeasy-rust-sdk = {version = "0.1.0", features = ["actix3"]}
 ```

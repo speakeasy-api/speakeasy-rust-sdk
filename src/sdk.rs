@@ -13,7 +13,7 @@ pub struct SpeakeasySdk<GrpcClient> {
     pub(crate) transport: GrpcClient,
 }
 
-impl<T: Transport> SpeakeasySdk<T> {
+impl<T: Transport + Send + Clone + 'static> SpeakeasySdk<T> {
     pub fn new_with_transport(config: Config, transport: T) -> Self {
         let config = RequestConfig::from(config);
         let masking = Masking::default();

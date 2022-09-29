@@ -1,4 +1,4 @@
-use crate::{async_runtime, middleware};
+use crate::async_runtime;
 
 use http::{HeaderValue, Uri};
 use once_cell::sync::Lazy;
@@ -52,7 +52,7 @@ impl GrpcClient {
 
 impl Transport for GrpcClient {
     type Output = ();
-    type Error = middleware::Error;
+    type Error = crate::Error;
 
     fn send(&self, request: IngestRequest) -> Result<Self::Output, Self::Error> {
         // NOTE: Using hyper directly as there seems to be a bug with tonic v0.3 throwing
@@ -118,13 +118,11 @@ pub(crate) mod tests {
     use har::Har;
 
     #[derive(Debug)]
-    pub struct GrpcMock {
-        pub sender: crate::async_runtime::Sender<Har>,
-    }
+    pub struct GrpcMock {}
 
     impl GrpcMock {
-        pub fn new(sender: crate::async_runtime::Sender<Har>) -> Self {
-            Self { sender }
+        pub fn new() -> Self {
+            Self {}
         }
     }
 
@@ -134,13 +132,6 @@ pub(crate) mod tests {
 
         fn send(&self, request: IngestRequest) -> Result<Self::Output, Self::Error> {
             let har = serde_json::from_str(&request.har).unwrap();
-
-            let mut sender = self.sender.clone();
-
-            async_runtime::spawn_task(async move {
-                sender.send(har).await.unwrap();
-            });
-
             Ok(())
         }
     }

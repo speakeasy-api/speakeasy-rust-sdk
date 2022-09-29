@@ -27,7 +27,7 @@ pub struct HarBuilder {
     request: GenericRequest,
     response: GenericResponse,
 
-    max_capture_size: Option<u64>,
+    max_capture_size: usize,
 
     // helper to avoid cloning
     masked_full_url: Option<Url>,
@@ -38,7 +38,7 @@ impl HarBuilder {
     pub(crate) fn new(
         request: GenericRequest,
         response: GenericResponse,
-        max_capture_size: Option<u64>,
+        max_capture_size: usize,
     ) -> Self {
         Self {
             request,
@@ -108,10 +108,8 @@ impl HarBuilder {
 
     fn build_request(&mut self, masking: &Masking) -> HarRequest {
         // drop body if controller was used to set a lower max capture size (request)
-        if let (Some(max_capture_size), BodyCapture::Captured(body)) =
-            (self.max_capture_size, &self.request.body)
-        {
-            if body.len() > max_capture_size as usize {
+        if let BodyCapture::Captured(body) = &self.request.body {
+            if body.len() > self.max_capture_size {
                 self.request.body = BodyCapture::Dropped
             }
         }
@@ -146,10 +144,8 @@ impl HarBuilder {
 
     fn build_response(&mut self, masking: &Masking) -> HarResponse {
         // drop body if controller was used to set a lower max capture size (response)
-        if let (Some(max_capture_size), BodyCapture::Captured(body)) =
-            (self.max_capture_size, &self.response.body)
-        {
-            if body.len() > max_capture_size as usize {
+        if let BodyCapture::Captured(body) = &self.response.body {
+            if body.len() > self.max_capture_size {
                 self.response.body = BodyCapture::Dropped
             }
         }

@@ -1,151 +1,117 @@
-use std::collections::HashMap;
+// 1MB
+pub(crate) const MAX_SIZE: usize = 1024 * 1024;
+
+use speakeasy_protos::ingest::IngestRequest;
 
 use crate::{
-    middleware::{
-        messages::{ControllerMessage, MiddlewareMessage},
-        RequestId,
-    },
-    path_hint, Masking, MiddlewareMessageSender,
+    async_runtime,
+    generic_http::{GenericRequest, GenericResponse},
+    har_builder::HarBuilder,
+    path_hint, sdk,
+    transport::Transport,
+    Error, Masking, RequestConfig,
 };
 
-#[derive(Debug)]
-pub struct ControllerState {
-    max_capture_sizes: HashMap<RequestId, u64>,
-    customer_ids: HashMap<RequestId, String>,
-    path_hints: HashMap<RequestId, String>,
-    masks: HashMap<RequestId, Masking>,
-}
-
-impl ControllerState {
-    pub fn new() -> Self {
-        Self {
-            masks: HashMap::new(),
-            path_hints: HashMap::new(),
-            customer_ids: HashMap::new(),
-            max_capture_sizes: HashMap::new(),
-        }
-    }
-
-    pub(crate) fn handle_message(&mut self, msg: ControllerMessage) {
-        match msg {
-            ControllerMessage::SetMasking {
-                request_id,
-                masking,
-            } => {
-                self.masks.insert(request_id, *masking);
-            }
-            ControllerMessage::SetPathHint {
-                request_id,
-                path_hint,
-            } => {
-                self.path_hints.insert(request_id, path_hint);
-            }
-            ControllerMessage::SetCustomerId {
-                request_id,
-                customer_id,
-            } => {
-                self.customer_ids.insert(request_id, customer_id);
-            }
-            ControllerMessage::SetMaxCaptureSize {
-                request_id,
-                capture_size,
-            } => {
-                self.max_capture_sizes.insert(request_id, capture_size);
-            }
-        }
-    }
-
-    pub(crate) fn get_masking(&mut self, request_id: &RequestId) -> Option<Masking> {
-        self.masks.remove(request_id)
-    }
-
-    pub(crate) fn get_path_hint(&mut self, request_id: &RequestId) -> Option<String> {
-        self.path_hints.remove(request_id)
-    }
-
-    pub(crate) fn get_customer_id(&mut self, request_id: &RequestId) -> Option<String> {
-        self.customer_ids.remove(request_id)
-    }
-
-    pub(crate) fn get_max_capture_size(&mut self, request_id: &RequestId) -> Option<u64> {
-        self.max_capture_sizes.remove(request_id)
-    }
-}
-
 #[derive(Debug, Clone)]
-pub struct Controller {
-    request_id: RequestId,
-    sender: MiddlewareMessageSender,
+pub struct Controller<T: Transport> {
+    transport: T,
+    config: RequestConfig,
+
+    request: Option<GenericRequest>,
+
+    masking: Masking,
+    path_hint: Option<String>,
+    customer_id: Option<String>,
+
+    pub(crate) max_capture_size: usize,
 }
 
-impl Controller {
-    pub fn new(request_id: RequestId, sender: MiddlewareMessageSender) -> Self {
-        Self { request_id, sender }
+// Public
+impl<T> Controller<T>
+where
+    T: Transport + Send + Clone + 'static,
+{
+    pub fn new(sdk: &sdk::SpeakeasySdk<T>) -> Self {
+        Self {
+            transport: sdk.transport.clone(),
+            config: sdk.config.clone(),
+            request: None,
+            masking: sdk.masking.clone(),
+            path_hint: None,
+            customer_id: None,
+            max_capture_size: MAX_SIZE,
+        }
     }
 
-    pub async fn set_path_hint(&self, path_hint: &str) {
+    pub fn set_path_hint(&mut self, path_hint: &str) {
         let path_hint = path_hint::normalize(path_hint);
-
-        self.sender
-            .clone()
-            .send(MiddlewareMessage::ControllerMessage(
-                ControllerMessage::SetPathHint {
-                    request_id: self.request_id.clone(),
-                    path_hint,
-                },
-            ))
-            .await
-            .unwrap();
+        self.path_hint = Some(path_hint)
     }
 
-    pub async fn set_masking(&self, masking: Masking) {
-        self.sender
-            .clone()
-            .send(MiddlewareMessage::ControllerMessage(
-                ControllerMessage::SetMasking {
-                    request_id: self.request_id.clone(),
-                    masking: Box::new(masking),
-                },
-            ))
-            .await
-            .unwrap();
+    pub fn set_masking(&mut self, masking: Masking) {
+        self.masking = masking
     }
 
-    pub async fn set_customer_id(&self, customer_id: String) {
-        self.sender
-            .clone()
-            .send(MiddlewareMessage::ControllerMessage(
-                ControllerMessage::SetCustomerId {
-                    request_id: self.request_id.clone(),
-                    customer_id,
-                },
-            ))
-            .await
-            .unwrap();
+    pub fn set_customer_id(&mut self, customer_id: String) {
+        self.customer_id = Some(customer_id)
     }
 
-    pub async fn set_max_capture_size(&self, capture_size: u64) {
-        self.sender
-            .clone()
-            .send(MiddlewareMessage::ControllerMessage(
-                ControllerMessage::SetMaxCaptureSize {
-                    request_id: self.request_id.clone(),
-                    capture_size,
-                },
-            ))
-            .await
-            .unwrap();
+    pub fn set_max_capture_size(&mut self, max_capture_size: usize) {
+        self.max_capture_size = max_capture_size
     }
 }
 
-// private methods used in middleware
-#[doc(hidden)]
-impl Controller {
-    pub(crate) fn request_id(&self) -> &RequestId {
-        &self.request_id
+// Crate use only
+impl<T> Controller<T>
+where
+    T: Transport + Send + Clone + 'static,
+{
+    pub(crate) fn set_request(&mut self, request: GenericRequest) {
+        self.request = Some(request)
     }
 
-    pub(crate) fn sender(&self) -> &MiddlewareMessageSender {
-        &self.sender
+    pub(crate) fn build_and_send_har(self, response: GenericResponse) -> Result<(), Error> {
+        let request = self.request.clone().ok_or(Error::RequestNotSaved)?;
+
+        // look for path hint for request, if not look in the request
+        let path_hint = self
+            .path_hint
+            .as_ref()
+            .or(request.path_hint.as_ref())
+            .map(ToString::to_string)
+            .unwrap_or_else(|| "".to_string());
+
+        let masking = self.masking.clone();
+
+        let customer_id = self.customer_id.clone().unwrap_or_default();
+
+        let max_capture_size = self.max_capture_size;
+
+        let config = self.config.clone();
+        let transport = self.transport;
+
+        async_runtime::spawn_task(async move {
+            let har = HarBuilder::new(request, response, max_capture_size).build(&masking);
+            let har_json = serde_json::to_string(&har).expect("har will serialize to json");
+
+            let masking_metadata = if masking.is_empty() {
+                None
+            } else {
+                Some(masking.into())
+            };
+
+            let ingest = IngestRequest {
+                har: har_json,
+                path_hint,
+                api_id: config.api_id,
+                version_id: config.version_id,
+                customer_id,
+                masking_metadata,
+            };
+
+            transport.send(ingest)
+        });
+
+        Ok(())
     }
 }

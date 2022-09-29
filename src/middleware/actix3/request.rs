@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::pin::Pin;
 use std::rc::Rc;
+use std::sync::{Arc, RwLock};
 use std::task::{Context, Poll};
 
 use actix3::{
@@ -16,57 +17,59 @@ use futures::{
     stream::StreamExt,
 };
 use http::header::CONTENT_LENGTH;
-use log::error;
 
+use crate::controller::Controller;
 use crate::generic_http::{BodyCapture, GenericRequest};
-use crate::middleware::{RequestId, MAX_SIZE};
-use crate::{path_hint, MiddlewareController, MiddlewareMessageSender};
-
-use super::MiddlewareMessage;
-
+use crate::transport::Transport;
+use crate::{path_hint, sdk};
 #[derive(Clone)]
-pub struct SpeakeasySdk {
-    sender: MiddlewareMessageSender,
+pub struct SpeakeasySdk<T: Transport> {
+    sdk: sdk::SpeakeasySdk<T>,
 }
 
-impl SpeakeasySdk {
-    pub(crate) fn new(sender: MiddlewareMessageSender) -> Self {
-        Self { sender }
+impl<T> SpeakeasySdk<T>
+where
+    T: Transport + Send + Clone + 'static,
+{
+    pub(crate) fn new(sdk: sdk::SpeakeasySdk<T>) -> Self {
+        Self { sdk }
     }
 }
 
-impl<S: 'static, B> Transform<S> for SpeakeasySdk
+impl<S: 'static, B, T> Transform<S> for SpeakeasySdk<T>
 where
     S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
     S::Future: 'static,
     B: 'static,
+    T: Transport + Send + Clone + 'static,
 {
     type Request = ServiceRequest;
     type Response = ServiceResponse<B>;
     type Error = Error;
     type InitError = ();
-    type Transform = SpeakeasySdkMiddleware<S>;
+    type Transform = SpeakeasySdkMiddleware<S, T>;
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
         ok(SpeakeasySdkMiddleware {
             service: Rc::new(RefCell::new(service)),
-            sender: self.sender.clone(),
+            sdk: self.sdk.clone(),
         })
     }
 }
 
-pub struct SpeakeasySdkMiddleware<S> {
+pub struct SpeakeasySdkMiddleware<S, T> {
     // This is special: We need this to avoid lifetime issues.
     service: Rc<RefCell<S>>,
-    sender: MiddlewareMessageSender,
+    sdk: crate::sdk::SpeakeasySdk<T>,
 }
 
-impl<S, B> Service for SpeakeasySdkMiddleware<S>
+impl<S, B, T> Service for SpeakeasySdkMiddleware<S, T>
 where
     S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
     B: 'static,
+    T: Transport + Send + Clone + 'static,
 {
     type Request = ServiceRequest;
     type Response = ServiceResponse<B>;
@@ -79,9 +82,8 @@ where
 
     fn call(&mut self, mut req: ServiceRequest) -> Self::Future {
         let start_time = Utc::now();
-        let request_id = RequestId::from(uuid::Uuid::new_v4().to_string());
         let mut svc = self.service.clone();
-        let mut sender = self.sender.clone();
+        let mut controller = Controller::new(&self.sdk);
 
         Box::pin(async move {
             let mut max_reached = false;
@@ -102,7 +104,7 @@ where
                 .unwrap_or_default();
 
             // if content_length is smaller than the max size attempt to capture the body
-            if content_length <= MAX_SIZE {
+            if content_length <= controller.max_capture_size {
                 if content_length > 0 {
                     captured_body.reserve(content_length);
                 }
@@ -118,7 +120,7 @@ where
                     captured_body.extend_from_slice(&chunk?);
 
                     // content_length might have not been accurate so we need to check the size
-                    if captured_body.len() >= MAX_SIZE {
+                    if captured_body.len() >= controller.max_capture_size {
                         max_reached = true;
                         break;
                     }
@@ -149,24 +151,10 @@ where
 
             // create a new GenericRequest from the ServiceRequest
             let generic_request = GenericRequest::new(&req, start_time, path_hint, body);
+            controller.set_request(generic_request);
 
-            if let Err(error) = sender
-                .send(MiddlewareMessage::Request {
-                    request_id: request_id.clone(),
-                    request: generic_request,
-                })
-                .await
-            {
-                error!(
-                    "Failed to send request to channel: {}, id {}",
-                    error, &request_id
-                );
-            }
-
-            req.extensions_mut().insert(MiddlewareController::new(
-                request_id.clone(),
-                sender.clone(),
-            ));
+            req.extensions_mut()
+                .insert(Arc::new(RwLock::new(controller)));
 
             let res = svc.call(req).await?;
 

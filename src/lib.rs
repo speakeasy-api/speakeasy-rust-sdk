@@ -5,8 +5,8 @@ mod path_hint;
 mod util;
 
 pub(crate) mod async_runtime;
-pub(crate) mod controller;
 
+pub mod controller;
 pub mod middleware;
 pub mod sdk;
 pub mod transport;
@@ -18,15 +18,17 @@ use transport::GrpcClient;
 pub type Masking = masking::Masking;
 pub type StringMaskingOption = masking::StringMaskingOption;
 pub type NumberMaskingOption = masking::NumberMaskingOption;
-pub type MiddlewareController = controller::Controller;
 
-pub(crate) type MiddlewareMessageSender =
-    async_runtime::Sender<middleware::messages::MiddlewareMessage>;
+pub type MiddlewareController = controller::Controller<GrpcClient>;
 
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("invalid api key {0}")]
     InvalidApiKey(InvalidHeaderValue),
+    #[error("request not saved, make sure the middleware is being used")]
+    RequestNotSaved,
+    #[error("invalid server address, incorrect: {0}")]
+    InvalidServerError(String),
 }
 
 /// Configuration struct for configuring the global speakeasy SDK instance

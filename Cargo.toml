@@ -13,6 +13,9 @@ exclude = [
   "/.*",
 ]
 
+[package.metadata.docs.rs]
+all-features = true
+
 [features]
 actix3 = [
   "dep:actix3",

@@ -13,6 +13,7 @@ exclude = [
   "/.*",
 ]
 
+[features]
 actix3 = [
   "dep:actix3",
   "dep:actix-service1",

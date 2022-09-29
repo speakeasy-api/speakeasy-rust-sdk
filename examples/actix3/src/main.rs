@@ -1,3 +1,5 @@
+use std::sync::{Arc, RwLock};
+
 use actix_web::{
     get, post,
     web::{self, ReqData},
@@ -5,8 +7,8 @@ use actix_web::{
 };
 use log::info;
 use speakeasy_rust_sdk::{
-    middleware::actix3::Middleware, Config, Masking, MiddlewareController, SpeakeasySdk,
-    StringMaskingOption,
+    masking::StringMaskingOption, middleware::actix3::Middleware, Config, Masking,
+    MiddlewareController, SpeakeasySdk,
 };
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -34,13 +36,13 @@ async fn upload(item: web::Bytes) -> impl Responder {
     let mut file = File::create("uploads/copied.png").unwrap();
     file.write_all(&item).unwrap();
 
-    format!("Uploaded!")
+    "Uploaded".to_string()
 }
 
 #[post("/use_controller")]
 async fn use_controller(
     item: web::Json<Person>,
-    controller: ReqData<MiddlewareController>,
+    controller: ReqData<Arc<RwLock<MiddlewareController>>>,
 ) -> HttpResponse {
     println!("json: {:?}", &item);
 
@@ -49,11 +51,17 @@ async fn use_controller(
     masking.with_request_field_mask_string("name", "NoOne");
     masking.with_response_field_mask_number("age", 22);
 
-    controller.set_path_hint("/use_controller/*").await;
-    controller.set_masking(masking).await;
     controller
-        .set_customer_id("123customer_id".to_string())
-        .await;
+        .write()
+        .unwrap()
+        .set_path_hint("/use_controller/*");
+
+    controller.write().unwrap().set_masking(masking);
+
+    controller
+        .write()
+        .unwrap()
+        .set_customer_id("123customer_id".to_string());
 
     HttpResponse::Ok().json(item.0)
 }
@@ -94,7 +102,7 @@ async fn main() -> std::io::Result<()> {
             .with_response_field_mask_string("secret", StringMaskingOption::default());
 
         let speakeasy_middleware = Middleware::new(sdk);
-        let (request_capture, response_capture) = speakeasy_middleware.init();
+        let (request_capture, response_capture) = speakeasy_middleware.into();
 
         App::new()
             .app_data(web::PayloadConfig::new(3_145_728))

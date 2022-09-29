@@ -1,18 +1,22 @@
+//! Contains logic for masking and setting masking options
 mod fields;
 mod option;
 
 pub(crate) mod body_mask;
 pub(crate) mod generic_mask;
 
+/// A mask option for string fields, default is `__masked__`
 pub type StringMaskingOption = option::StringMaskingOption;
+
+/// A mask option for number fields, default is `-12321`
 pub type NumberMaskingOption = option::NumberMaskingOption;
 
 pub(crate) type Fields = fields::Fields;
 
 use std::collections::HashMap;
 
+use crate::speakeasy_protos::ingest::ingest_request::MaskingMetadata;
 use log::error;
-use speakeasy_protos::ingest::ingest_request::MaskingMetadata;
 
 use self::{
     body_mask::{BodyMask, RequestMask, ResponseMask},
@@ -25,7 +29,7 @@ use self::{
 pub(crate) const DEFAULT_STRING_MASK: &str = "__masked__";
 pub(crate) const DEFAULT_NUMBER_MASK: i32 = -12321;
 
-/// All masking options, see for functions for more details on setting them
+/// All masking options, see functions for more details on setting them
 #[derive(Debug, Clone, Default)]
 pub struct Masking {
     pub(crate) query_string_mask: GenericMask<QueryStringMask>,
@@ -38,17 +42,17 @@ pub struct Masking {
 }
 
 impl Masking {
-    /// with_query_string_mask will mask the specified query strings with an optional mask string.
+    /// Will mask the specified query strings with an optional mask string.
     /// If no mask is provided, the value will be masked with the default mask.
     /// If a single mask is provided, it will be used for all query strings.
     /// If the number of masks provided is equal to the number of query strings, masks will be used in order.
     /// Otherwise, the masks will be used in order until it they are exhausted. If the masks are exhausted, the default mask will be used.
-    /// (defaults to "__masked__").
+    /// (defaults to `"__masked__"`).
     /// # Examples
     /// ```rust
     /// use std::collections::HashMap;
-    /// use speakeasy_rust_sdk::{Masking, StringMaskingOption};
-    ///
+    /// use speakeasy_rust_sdk::{Masking, masking::StringMaskingOption};
+
     /// // Mask a single field with the default mask
     /// let mut masking = Masking::default();
     /// masking.with_query_string_mask("password", StringMaskingOption::default());
@@ -99,11 +103,12 @@ impl Masking {
     /// If a single mask is provided, it will be used for all headers.
     /// If the number of masks provided is equal to the number of headers, masks will be used in order.
     /// Otherwise, the masks will be used in order until it they are exhausted. If the masks are exhausted, the default mask will be used.
-    /// (defaults to "__masked__").
+    /// (defaults to `"__masked__"`).
     /// # Examples
     /// ```rust
     /// use std::collections::HashMap;
-    /// use speakeasy_rust_sdk::{Masking, StringMaskingOption};
+    /// use speakeasy_rust_sdk::{Masking, masking::StringMaskingOption};
+
     ///
     /// // Mask a single field with the default mask
     /// let mut masking = Masking::default();
@@ -155,11 +160,12 @@ impl Masking {
     /// If a single mask is provided, it will be used for all cookies.
     /// If the number of masks provided is equal to the number of cookies, masks will be used in order.
     /// Otherwise, the masks will be used in order until it they are exhausted. If the masks are exhausted, the default mask will be used.
-    /// (defaults to "__masked__").
+    /// (defaults to `"__masked__"`).
     /// # Examples
     /// ```rust
     /// use std::collections::HashMap;
-    /// use speakeasy_rust_sdk::{Masking, StringMaskingOption};
+    /// use speakeasy_rust_sdk::{Masking, masking::StringMaskingOption};
+
     ///
     /// // Mask a single field with the default mask
     /// let mut masking = Masking::default();
@@ -211,11 +217,12 @@ impl Masking {
     /// If a single mask is provided, it will be used for all headers.
     /// If the number of masks provided is equal to the number of headers, masks will be used in order.
     /// Otherwise, the masks will be used in order until it they are exhausted. If the masks are exhausted, the default mask will be used.
-    /// (defaults to "__masked__").
+    /// (defaults to `"__masked__"`).
     /// # Examples
     /// ```rust
     /// use std::collections::HashMap;
-    /// use speakeasy_rust_sdk::{Masking, StringMaskingOption};
+    /// use speakeasy_rust_sdk::{Masking, masking::StringMaskingOption};
+
     ///
     /// // Mask a single field with the default mask
     /// let mut masking = Masking::default();
@@ -267,11 +274,12 @@ impl Masking {
     /// If a single mask is provided, it will be used for all cookies.
     /// If the number of masks provided is equal to the number of cookies, masks will be used in order.
     /// Otherwise, the masks will be used in order until it they are exhausted. If the masks are exhausted, the default mask will be used.
-    /// (defaults to "__masked__").
+    /// (defaults to `"__masked__"`).
     /// # Examples
     /// ```rust
     /// use std::collections::HashMap;
-    /// use speakeasy_rust_sdk::{Masking, StringMaskingOption};
+    /// use speakeasy_rust_sdk::{Masking, masking::StringMaskingOption};
+
     ///
     /// // Mask a single field with the default mask
     /// let mut masking = Masking::default();
@@ -318,18 +326,19 @@ impl Masking {
         self.request_cookie_mask = GenericMask::new(fields.into(), masking_option.into());
     }
 
-    /// with_request_field_mask_string will mask the specified request body fields with an optional mask.
+    /// Will mask the specified request body fields with an optional mask.
     /// Supports string fields only. Matches using regex.
     /// If no mask is provided, the value will be masked with the default mask.
     /// If a single mask is provided, it will be used for all fields.
     /// If the number of masks provided is equal to the number of fields, masks will be used in order.
     /// Otherwise, the masks will be used in order until it they are exhausted. If the masks are exhausted, the default mask will be used.
-    /// (defaults to "__masked__").
+    /// (defaults to `"__masked__"`).
     ///
     /// # Examples
     /// ```rust
     /// use std::collections::HashMap;
-    /// use speakeasy_rust_sdk::{Masking, StringMaskingOption};
+    /// use speakeasy_rust_sdk::{Masking, masking::StringMaskingOption};
+
     ///
     /// // Mask a single field with the default mask
     /// let mut masking = Masking::default();
@@ -395,7 +404,8 @@ impl Masking {
     /// # Examples
     /// ```rust
     /// use std::collections::HashMap;
-    /// use speakeasy_rust_sdk::{Masking, NumberMaskingOption};
+    /// use speakeasy_rust_sdk::{Masking, masking::NumberMaskingOption};
+
     ///
     /// // Mask a single field with the default mask
     /// let mut masking = Masking::default();
@@ -451,17 +461,18 @@ impl Masking {
         }
     }
 
-    /// with_response_field_string will mask the specified response body with an optional mask. Supports string only. Matches using regex.
+    /// Will mask the specified response body with an optional mask. Supports string only. Matches using regex.
     /// If no mask is provided, the value will be masked with the default mask.
     /// If a single mask is provided, it will be used for all fields.
     /// If the number of masks provided is equal to the number of fields, masks will be used in order.
     /// Otherwise, the masks will be used in order until it they are exhausted. If the masks are exhausted, the default mask will be used.
-    /// (defaults to "__masked__").
+    /// (defaults to `"__masked__"`).
     ///
     ///  # Examples
     ///  ```rust
     ///  use std::collections::HashMap;
-    ///  use speakeasy_rust_sdk::{Masking, StringMaskingOption};
+    ///  use speakeasy_rust_sdk::{Masking, masking::StringMaskingOption};
+
     ///
     ///  // Mask a single field with the default mask
     ///  let mut masking = Masking::default();
@@ -527,7 +538,8 @@ impl Masking {
     /// # Examples
     /// ```rust
     /// use std::collections::HashMap;
-    /// use speakeasy_rust_sdk::{Masking, NumberMaskingOption};
+    /// use speakeasy_rust_sdk::{Masking, masking::NumberMaskingOption};
+
     ///
     /// // Mask a single field with the default mask
     /// let mut masking = Masking::default();

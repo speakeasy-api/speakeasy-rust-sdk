@@ -1,8 +1,8 @@
 use crate::async_runtime;
 
+use crate::speakeasy_protos::ingest::{ingest_service_client::IngestServiceClient, IngestRequest};
 use http::{HeaderValue, Uri};
 use once_cell::sync::Lazy;
-use speakeasy_protos::ingest::{ingest_service_client::IngestServiceClient, IngestRequest};
 use std::{str::FromStr, sync::Arc};
 use tonic03::Request;
 

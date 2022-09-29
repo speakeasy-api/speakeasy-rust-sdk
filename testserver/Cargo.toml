@@ -7,7 +7,6 @@ version = "0.1.0"
 
 [dependencies]
 # speakeasy sdk
-speakeasy-protos = {git = "https://github.com/praveenperera/speakeasy-schemas/", branch = "rust"}
 speakeasy-rust-sdk = {path = "../", features = ["actix3"]}
 
 # actix

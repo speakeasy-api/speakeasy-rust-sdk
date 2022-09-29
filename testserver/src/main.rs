@@ -15,11 +15,11 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use speakeasy_protos::ingest::IngestRequest;
 use speakeasy_rust_sdk::{
-    controller::Controller, middleware::actix3::Middleware, sdk, transport::Transport, Config,
-    Masking,
+    middleware::actix3::Middleware, transport::Transport, Config, GenericController,
+    GenericSpeakeasySdk, Masking,
 };
 
-type MiddlewareController = Controller<GrpcMock>;
+type MiddlewareController = GenericController<GrpcMock>;
 
 const TEST_NAME_HEADER: &str = "x-speakeasy-test-name";
 
@@ -222,7 +222,7 @@ async fn main() -> std::io::Result<()> {
         let grpc_mock = GrpcMock::new();
 
         // Create a new Speakeasy SDK instance
-        let sdk = sdk::SpeakeasySdk::new_with_transport(config, grpc_mock);
+        let sdk = GenericSpeakeasySdk::new_with_transport(config, grpc_mock);
 
         let speakeasy_middleware = Middleware::new(sdk);
         let (request_capture, response_capture) = speakeasy_middleware.init();

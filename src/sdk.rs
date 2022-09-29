@@ -6,14 +6,14 @@ use crate::{
 /// Speakeasy SDK instance
 #[doc(hidden)]
 #[derive(Debug, Clone)]
-pub struct SpeakeasySdk<GrpcClient> {
+pub struct GenericSpeakeasySdk<GrpcClient> {
     pub masking: Masking,
 
     pub(crate) config: RequestConfig,
     pub(crate) transport: GrpcClient,
 }
 
-impl<T: Transport + Send + Clone + 'static> SpeakeasySdk<T> {
+impl<T: Transport + Send + Clone + 'static> GenericSpeakeasySdk<T> {
     pub fn new_with_transport(config: Config, transport: T) -> Self {
         let config = RequestConfig::from(config);
         let masking = Masking::default();
@@ -26,7 +26,7 @@ impl<T: Transport + Send + Clone + 'static> SpeakeasySdk<T> {
     }
 }
 
-impl SpeakeasySdk<GrpcClient> {
+impl GenericSpeakeasySdk<GrpcClient> {
     /// Create a new Speakeasy SDK instance
     ///
     /// # Examples:

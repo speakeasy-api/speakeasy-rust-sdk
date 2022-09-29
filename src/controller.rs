@@ -7,9 +7,9 @@ use crate::{
     async_runtime,
     generic_http::{GenericRequest, GenericResponse},
     har_builder::HarBuilder,
-    path_hint, sdk,
+    path_hint,
     transport::Transport,
-    Error, Masking, RequestConfig,
+    Error, GenericSpeakeasySdk, Masking, RequestConfig,
 };
 
 #[derive(Debug, Clone)]
@@ -31,7 +31,7 @@ impl<T> Controller<T>
 where
     T: Transport + Send + Clone + 'static,
 {
-    pub fn new(sdk: &sdk::SpeakeasySdk<T>) -> Self {
+    pub fn new(sdk: &GenericSpeakeasySdk<T>) -> Self {
         Self {
             transport: sdk.transport.clone(),
             config: sdk.config.clone(),

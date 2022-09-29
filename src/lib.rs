@@ -5,8 +5,8 @@ mod path_hint;
 mod util;
 
 pub(crate) mod async_runtime;
+pub(crate) mod controller;
 
-pub mod controller;
 pub mod middleware;
 pub mod sdk;
 pub mod transport;
@@ -19,7 +19,15 @@ pub type Masking = masking::Masking;
 pub type StringMaskingOption = masking::StringMaskingOption;
 pub type NumberMaskingOption = masking::NumberMaskingOption;
 
-pub type MiddlewareController = controller::Controller<GrpcClient>;
+/// Speakeasy SDK instance and controller
+pub type SpeakeasySdk = GenericSpeakeasySdk<GrpcClient>;
+pub type Controller = GenericController<GrpcClient>;
+
+/// Generic structs used to override Grpc transport
+#[doc(hidden)]
+pub type GenericController<T> = controller::Controller<T>;
+#[doc(hidden)]
+pub type GenericSpeakeasySdk<T> = sdk::GenericSpeakeasySdk<T>;
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -54,9 +62,6 @@ pub(crate) struct RequestConfig {
     pub api_id: String,
     pub version_id: String,
 }
-
-/// Speakeasy SDK instance
-pub type SpeakeasySdk = sdk::SpeakeasySdk<GrpcClient>;
 
 impl From<Config> for RequestConfig {
     fn from(config: Config) -> Self {

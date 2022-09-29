@@ -13,7 +13,7 @@ Supported Frameworks:
 
 ## Usage
 
-Available on crates: [crates.io/speakeasy-rust-sdk](https://crates.io/speakeasy-rust-sdk)
+Available on crates: [crates.io/crates/speakeasy-rust-sdk](https://crates.io/crates/speakeasy-rust-sdk)
 
 Documentation available at: [docs.rs/speakeasy-rust-sdk](<(https://docs.rs/speakeasy-rust-sdk)>)
 

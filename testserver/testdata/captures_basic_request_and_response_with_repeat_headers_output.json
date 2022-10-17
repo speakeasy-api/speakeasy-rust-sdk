@@ -1,10 +1,11 @@
 {
   "log": {
-    "version": "1.2",
+    "comment": "request capture for /test",
     "creator": {
       "name": "speakeasy-rust-sdk",
       "version": "0.1.0"
     },
+    "version": "1.2",
     "entries": [
       {
         "startedDateTime": "2020-01-01T00:00:00Z",
@@ -16,20 +17,20 @@
           "cookies": [],
           "headers": [
             {
-              "name": "accept-encoding",
-              "value": "gzip, deflate"
+              "name": "vary",
+              "value": "Origin"
             },
             {
-              "name": "connection",
-              "value": "close"
+              "name": "vary",
+              "value": "Access-Control-Request-Method"
             },
             {
-              "name": "host",
-              "value": "test.com"
+              "name": "vary",
+              "value": "Access-Control-Request-Headers"
             }
           ],
           "queryString": [],
-          "headersSize": 67,
+          "headersSize": 89,
           "bodySize": -1
         },
         "response": {
@@ -47,8 +48,16 @@
               "value": "text/plain; charset=utf-8"
             },
             {
-              "name": "location",
-              "value": "http://test.com/test2"
+              "name": "vary",
+              "value": "Origin"
+            },
+            {
+              "name": "vary",
+              "value": "Access-Control-Request-Method"
+            },
+            {
+              "name": "vary",
+              "value": "Access-Control-Request-Headers"
             }
           ],
           "content": {
@@ -56,8 +65,8 @@
             "mimeType": "text/plain; charset=utf-8",
             "text": "test"
           },
-          "redirectURL": "http://test.com/test2",
-          "headersSize": 93,
+          "redirectURL": "",
+          "headersSize": 149,
           "bodySize": 4
         },
         "cache": {},
@@ -68,7 +77,6 @@
         },
         "serverIPAddress": "test.com"
       }
-    ],
-    "comment": "request capture for /test"
+    ]
   }
 }

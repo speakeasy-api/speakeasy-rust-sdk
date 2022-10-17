@@ -25,7 +25,7 @@
             },
             {
               "name": "content-length",
-              "value": "25"
+              "value": "24"
             },
             {
               "name": "content-type",
@@ -43,7 +43,7 @@
             "text": "--dropped--"
           },
           "headersSize": 119,
-          "bodySize": 25
+          "bodySize": 24
         },
         "response": {
           "status": 200,

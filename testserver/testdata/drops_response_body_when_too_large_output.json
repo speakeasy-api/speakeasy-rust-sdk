@@ -25,7 +25,7 @@
             },
             {
               "name": "content-length",
-              "value": "10"
+              "value": "9"
             },
             {
               "name": "content-type",
@@ -40,10 +40,10 @@
           "postData": {
             "mimeType": "application/json",
             "params": [],
-            "text": "{\"a\": \"b\"}"
+            "text": "{\"a\":\"b\"}"
           },
-          "headersSize": 119,
-          "bodySize": 10
+          "headersSize": 118,
+          "bodySize": 9
         },
         "response": {
           "status": 200,

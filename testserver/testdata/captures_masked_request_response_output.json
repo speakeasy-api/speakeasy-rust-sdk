@@ -42,7 +42,7 @@
             },
             {
               "name": "content-length",
-              "value": "103"
+              "value": "93"
             },
             {
               "name": "content-type",
@@ -74,10 +74,10 @@
           "postData": {
             "mimeType": "application/json",
             "params": [],
-            "text": "{\"test\": \"test\", \"test1\": -12321, \"address\": {\"line1\": \"__masked__\", \"line2\": \"line2\", \"street\": \"_____\"}}"
+            "text": "{\"test\":\"test\",\"test1\":-12321,\"address\":{\"line1\":\"__masked__\",\"line2\":\"line2\",\"street\":\"_____\"}}"
           },
-          "headersSize": 219,
-          "bodySize": 103
+          "headersSize": 218,
+          "bodySize": 93
         },
         "response": {
           "status": 200,
@@ -101,7 +101,7 @@
           "headers": [
             {
               "name": "content-length",
-              "value": "129"
+              "value": "93"
             },
             {
               "name": "content-type",
@@ -137,13 +137,13 @@
             }
           ],
           "content": {
-            "size": 134,
+            "size": 93,
             "mimeType": "application/json; charset=utf-8",
-            "text": "{\r\n  \"test\": \"test\",\r\n  \"test1\": -12321,\r\n  \"address\":{\r\n    \"line1\": \"__masked__\",\r\n    \"line2\": \"line2\",\r\n    \"street\": \"_____\"\r\n  }\r\n}"
+            "text": "{\"test\":\"test\",\"test1\":-12321,\"address\":{\"line1\":\"__masked__\",\"line2\":\"line2\",\"street\":\"_____\"}}"
           },
           "redirectURL": "",
-          "headersSize": 249,
-          "bodySize": 129
+          "headersSize": 248,
+          "bodySize": 93
         },
         "cache": {},
         "timings": { "send": -1, "wait": -1, "receive": -1 },

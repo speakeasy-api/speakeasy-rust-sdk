@@ -362,10 +362,5 @@ fn build_headers_size(headers: &HeaderMap) -> i64 {
         headers_size += 4;
     }
 
-    if headers.len() > 1 {
-        // drop the last new line
-        headers_size -= 1;
-    }
-
     headers_size as i64
 }

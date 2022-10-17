@@ -227,11 +227,10 @@ fn integration_tests() {
                 want_har_entry.response.content
             );
 
-            //TODO: re-enable when testsuite bug is fixed
-            // assert_eq!(
-            //     got_har_entry.response.headers_size,
-            //     want_har_entry.response.headers_size
-            // );
+            assert_eq!(
+                got_har_entry.response.headers_size,
+                want_har_entry.response.headers_size
+            );
         }
     });
 }

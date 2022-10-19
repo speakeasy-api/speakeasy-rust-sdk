@@ -10,6 +10,10 @@
     "response_body": "test",
     "headers": [
       {
+        "key": "Host",
+        "values": ["test.com"]
+      },
+      {
         "key": "Vary",
         "values": ["Origin"]
       },

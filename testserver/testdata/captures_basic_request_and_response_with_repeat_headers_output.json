@@ -17,6 +17,10 @@
           "cookies": [],
           "headers": [
             {
+              "name": "host",
+              "value": "test.com"
+            },
+            {
               "name": "vary",
               "value": "Origin"
             },

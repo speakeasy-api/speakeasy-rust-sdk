@@ -6,7 +6,9 @@ use once_cell::sync::Lazy;
 use std::{str::FromStr, sync::Arc};
 
 #[cfg(feature = "tokio02")]
+
 mod tokio02 {
+    pub use tonic03::body::BoxBody;
     pub use tonic03::Request as TonicRequest;
     pub use hyper13::Request as HyperRequest;
     pub use hyper13::Client;
@@ -16,6 +18,19 @@ mod tokio02 {
 
 #[cfg(feature = "tokio02")]
 use self::tokio02::*;
+
+#[cfg(feature = "tokio")]
+mod tokio {
+    pub use tonic::body::BoxBody;
+    pub use tonic::Request as TonicRequest;
+    pub use hyper::Request as HyperRequest;
+    pub use hyper::Client;
+    pub use tower::service_fn;
+    pub use hyper_openssl::HttpsConnector;
+}
+
+#[cfg(feature = "tokio")]
+use self::tokio::*;
 
 
 
@@ -86,7 +101,7 @@ impl Transport for GrpcClient {
         let token = self.token.clone();
 
         let add_origin =
-            service_fn(move |mut req: HyperRequest<tonic03::body::BoxBody>| {
+            service_fn(move |mut req: HyperRequest<BoxBody>| {
                 let uri = Uri::builder()
                     .scheme(uri.scheme().unwrap().clone())
                     .authority(authority.clone())

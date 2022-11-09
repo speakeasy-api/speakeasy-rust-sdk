@@ -1,9 +1,9 @@
 use crate::async_runtime;
 
-use crate::speakeasy_protos::ingest::{ingest_service_client::IngestServiceClient, IngestRequest};
-use http::{HeaderValue, Uri};
+use http::{HeaderValue};
 use once_cell::sync::Lazy;
 use std::{str::FromStr, sync::Arc};
+use crate::speakeasy_protos::ingest::{ingest_service_client::IngestServiceClient, IngestRequest};
 
 #[cfg(feature = "tokio02")]
 
@@ -11,7 +11,8 @@ mod tokio02 {
     pub use tonic03::body::BoxBody;
     pub use tonic03::Request as TonicRequest;
     pub use hyper13::Request as HyperRequest;
-    pub use hyper13::Client;
+    pub use hyper13::Client as HyperClient;
+    pub use hyper13::Uri;
     pub use tower03::service_fn;
     pub use hyper_openssl08::HttpsConnector;
 }
@@ -24,15 +25,14 @@ mod tokio {
     pub use tonic::body::BoxBody;
     pub use tonic::Request as TonicRequest;
     pub use hyper::Request as HyperRequest;
-    pub use hyper::Client;
+    pub use hyper::Client as HyperClient;
+    pub use hyper::Uri;
     pub use tower::service_fn;
     pub use hyper_openssl::HttpsConnector;
 }
 
 #[cfg(feature = "tokio")]
 use self::tokio::*;
-
-
 
 pub(crate) static SPEAKEASY_SERVER_SECURE: Lazy<bool> = Lazy::new(|| {
     !matches!(
@@ -86,8 +86,8 @@ impl Transport for GrpcClient {
         // NOTE: Using hyper directly as there seems to be a bug with tonic v0.3 throwing
         // an error from rustls. When making the middleware for actix4 we can hopefully
         // avoid doing this and just use the client directly from tonic.
-        let insecure_client = Client::builder().http2_only(true).build_http();
-        let client = Client::builder()
+        let insecure_client = HyperClient::builder().http2_only(true).build_http();
+        let client = HyperClient::builder()
             .http2_only(true)
             .build(HttpsConnector::new().expect("Need OpenSSL"));
 

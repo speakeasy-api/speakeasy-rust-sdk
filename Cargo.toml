@@ -18,6 +18,9 @@ exclude = [
 # all-features = true
 
 [features]
+# TODO: delete
+default = ["axum", "tokio"]
+
 axum = [
   "dep:axum",
   "dep:futures",
@@ -41,13 +44,13 @@ tokio = [
   "dep:tower",
   "dep:hyper",
   "dep:hyper-openssl",
-  "dep:speakeasy-protos",
+  "dep:speakeasy-protos-tokio-latest",
 ]
 
 tokio02 = [
   "dep:tokio02",
   "dep:tonic03",
-  "dep:speakeasy-protos02",
+  "dep:speakeasy-protos-tokio-02",
   "dep:hyper-openssl08",
 ]
 
@@ -82,9 +85,9 @@ mime = "0.3.16"
 axum = {version = "0.5", optional = true}
 
 # latest deps
-hyper = {version = "0.14.16", optional = true}
+hyper = {version = "0.14", optional = true}
 hyper-openssl = {version = "0.9", optional = true}
-speakeasy-protos = {package = "speakeasy-protos", path = "../speakeasy-schemas/grpc/rust/tokio02", version = "*", optional = true}
+speakeasy-protos-tokio-latest = {version = "0.1.0", optional = true}
 tokio = {version = "1.21", features = ["sync"], optional = true}
 tonic = {version = "0.8", features = ["transport", "tls"], optional = true}
 tower = {version = "0.4", optional = true}
@@ -98,7 +101,7 @@ tokio02 = {package = "tokio", version = "0.2", features = ["sync", "rt-core"], o
 # grpc actix3 compat
 hyper-openssl08 = {package = "hyper-openssl", version = "0.8.0", optional = true}
 hyper13 = {package = "hyper", version = "0.13.4", features = ["stream"], optional = true}
-speakeasy-protos02 = {package = "speakeasy-protos", path = "../speakeasy-schemas/grpc/rust/tokio02", version = "*", optional = true}
+speakeasy-protos-tokio-02 = {version = "0.1.0", optional = true}
 tonic03 = {package = "tonic", version = "0.3", features = ["transport", "tls"], optional = true}
 tower03 = {package = "tower", version = "0.3", optional = true}
 

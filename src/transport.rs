@@ -4,7 +4,18 @@ use crate::speakeasy_protos::ingest::{ingest_service_client::IngestServiceClient
 use http::{HeaderValue, Uri};
 use once_cell::sync::Lazy;
 use std::{str::FromStr, sync::Arc};
-use tonic03::Request;
+
+#[cfg(feature = "tokio02")]
+mod tokio02 {
+    pub use tonic03::Request;
+    pub use hyper13::Client;
+    pub use tower03::service_fn;
+    pub use hyper_openssl08::HttpsConnector;
+}
+
+#[cfg(feature = "tokio02")]
+use self::tokio02::*;
+
 
 pub(crate) static SPEAKEASY_SERVER_SECURE: Lazy<bool> = Lazy::new(|| {
     !matches!(
@@ -58,12 +69,12 @@ impl Transport for GrpcClient {
         // NOTE: Using hyper directly as there seems to be a bug with tonic v0.3 throwing
         // an error from rustls. When making the middleware for actix4 we can hopefully
         // avoid doing this and just use the client directly from tonic.
-        let insecure_client = hyper::Client::builder().http2_only(true).build_http();
-        let client = hyper::Client::builder()
+        let insecure_client = Client::builder().http2_only(true).build_http();
+        let client = Client::builder()
             .http2_only(true)
-            .build(hyper_openssl::HttpsConnector::new().expect("Need OpenSSL"));
+            .build(HttpsConnector::new().expect("Need OpenSSL"));
 
-        let uri = hyper::Uri::from_str(&SPEAKEASY_SERVER_URL).unwrap();
+        let uri = Uri::from_str(&SPEAKEASY_SERVER_URL).unwrap();
 
         let authority = uri
             .authority()
@@ -73,7 +84,7 @@ impl Transport for GrpcClient {
         let token = self.token.clone();
 
         let add_origin =
-            tower::service_fn(move |mut req: hyper::Request<tonic03::body::BoxBody>| {
+            service_fn(move |mut req: Request<tonic03::body::BoxBody>| {
                 let uri = Uri::builder()
                     .scheme(uri.scheme().unwrap().clone())
                     .authority(authority.clone())

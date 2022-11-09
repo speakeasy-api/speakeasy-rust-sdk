@@ -14,25 +14,38 @@ exclude = [
 ]
 
 [package.metadata.docs.rs]
-all-features = true
+# features = ["feature1", "feature2"]
+# all-features = true
 
 [features]
+axum = [
+  "dep:tokio",
+  "dep:axum",
+]
+
 actix3 = [
   "dep:actix3",
   "dep:actix-service1",
   "dep:actix-http2",
   "dep:futures",
   "dep:pin-project",
-  "dep:hyper",
-  "dep:tower",
+  "dep:hyper13",
+  "dep:tower03",
   "tokio02",
+]
+
+tokio = [
+  "dep:tokio",
+  "dep:tonic",
+  "dep:prost",
+  "dep:hyper-openssl",
 ]
 
 tokio02 = [
   "dep:tokio02",
   "dep:tonic03",
   "dep:prost",
-  "dep:hyper-openssl",
+  "dep:hyper-openssl08",
 ]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -62,6 +75,17 @@ mime = "0.3.16"
 
 ## web frameworks middleware
 
+# axum
+axum = {version = "0.5", optional = true}
+
+# latest deps
+hyper = {version = "0.14", features = ["stream"], optional = true}
+hyper-openssl = {version = "0.9", optional = true}
+prost = {version = "0.6", optional = true}
+tokio = {version = "1.21", features = ["sync"], optional = true}
+tonic = {version = "0.8", features = ["transport", "prost", "tls"], optional = true}
+tower = {version = "0.4", optional = true}
+
 # actix 3
 actix-http2 = {package = "actix-http", version = "2", optional = true}
 actix-service1 = {package = "actix-service", version = "1", optional = true}
@@ -69,11 +93,10 @@ actix3 = {package = "actix-web", version = "3", optional = true}
 tokio02 = {package = "tokio", version = "0.2", features = ["sync", "rt-core"], optional = true}
 
 # grpc actix3 compat
-hyper = {version = "0.13.4", features = ["stream"], optional = true}
-hyper-openssl = {version = "0.8.0", optional = true}
-prost = {version = "0.6", optional = true}
+hyper-openssl08 = {package = "hyper-openssl", version = "0.8.0", optional = true}
+hyper13 = {package = "hyper", version = "0.13.4", features = ["stream"], optional = true}
 tonic03 = {package = "tonic", version = "0.3", features = ["transport", "prost", "tls"], optional = true}
-tower = {version = "0.3", optional = true}
+tower03 = {package = "tower", version = "0.3", optional = true}
 
 # async
 futures = {version = "0.3", optional = true}

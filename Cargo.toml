@@ -19,8 +19,8 @@ exclude = [
 
 [features]
 axum = [
-  "dep:tokio",
   "dep:axum",
+  "tokio",
 ]
 
 actix3 = [

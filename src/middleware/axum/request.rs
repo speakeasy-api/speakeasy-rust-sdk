@@ -1,6 +1,3 @@
-use std::cell::RefCell;
-use std::pin::Pin;
-use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 use std::task::{Context, Poll};
 
@@ -8,7 +5,7 @@ use axum::extract::MatchedPath;
 use http::header::CONTENT_LENGTH;
 use bytes::BytesMut;
 use chrono::Utc;
-use futures::{future::{BoxFuture, ok, Future, Ready}, stream::StreamExt};
+use futures::{future::{BoxFuture}, stream::StreamExt};
 
 use axum::{
     response::Response,
@@ -141,8 +138,8 @@ where
             }
 
             // create a new GenericRequest from the ServiceRequest
-            // let generic_request = GenericRequest::new(&request, start_time, path_hint, body);
-            // controller.set_request(generic_request);
+            let generic_request = GenericRequest::new(&request, start_time, path_hint, body);
+            controller.set_request(generic_request);
 
             request.extensions_mut()
                 .insert(Arc::new(RwLock::new(controller)));

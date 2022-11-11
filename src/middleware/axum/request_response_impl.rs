@@ -1,20 +1,27 @@
 use crate::generic_http::{BodyCapture, GenericCookie, GenericRequest, GenericResponse};
+use axum::{body::Body, extract::Host, http::Request};
+use axum_extra::extract::cookie::{Cookie, CookieJar};
 use chrono::{DateTime, NaiveDateTime, Utc};
 
 impl GenericRequest {
     pub fn new(
-        request: &ServiceRequest,
+        request: &Request<Body>,
         start_time: DateTime<Utc>,
         path_hint: Option<String>,
         body: BodyCapture,
     ) -> Self {
         // NOTE IMPORTANT: have to get cookies before getting headers or there will be a BorrowMut
-        // already borrowed error from actix
         let cookies = get_request_cookies(request);
 
-        let scheme = request.connection_info().scheme().to_string();
-        let path = request.uri().to_string();
-        let host = request.connection_info().host().to_string();
+        let scheme = request.uri().scheme_str().unwrap_or("http").to_string();
+        let path = request.uri().path().to_string();
+
+        let host = if let Some(host) = request.extensions().get::<Host>() {
+            host.0.clone()
+        } else {
+            log::debug!("unable to extract host, falling back to localhost");
+            "localhost".to_string()
+        };
 
         let url_string = format!("{}://{}{}", scheme, host, path);
         let full_url = url::Url::parse(&url_string).ok();
@@ -37,7 +44,7 @@ impl GenericRequest {
     }
 }
 
-fn get_request_headers(request: &ServiceRequest) -> http::HeaderMap {
+fn get_request_headers(request: &Request<Body>) -> http::HeaderMap {
     request
         .headers()
         .iter()
@@ -45,8 +52,8 @@ fn get_request_headers(request: &ServiceRequest) -> http::HeaderMap {
         .collect()
 }
 
-fn get_request_cookies(cookies: &ServiceRequest) -> Vec<GenericCookie> {
-    if let Ok(cookies) = &cookies.cookies() {
+fn get_request_cookies(request: &Request<Body>) -> Vec<GenericCookie> {
+    if let Some(cookies) = request.extensions().get::<CookieJar>() {
         cookies.iter().cloned().map(Into::into).collect()
     } else {
         vec![]
@@ -94,14 +101,20 @@ impl<'a> From<Cookie<'a>> for GenericCookie {
             value: cookie.value().to_string(),
             path: cookie.path().map(ToString::to_string),
             domain: cookie.domain().map(ToString::to_string),
-            expires: cookie.expires().map(|dt| {
-                DateTime::<Utc>::from_utc(
-                    NaiveDateTime::from_timestamp(dt.unix_timestamp(), 0),
-                    Utc,
-                )
-            }),
+            expires: get_cookie_expiration(&cookie),
             http_only: cookie.http_only(),
             secure: cookie.secure(),
         }
     }
+}
+
+fn get_cookie_expiration(cookie: &Cookie) -> Option<DateTime<Utc>> {
+    let expires_at = cookie.expires()?.datetime()?;
+
+    let datetime = DateTime::<Utc>::from_utc(
+        NaiveDateTime::from_timestamp(expires_at.unix_timestamp(), 0),
+        Utc,
+    );
+
+    Some(datetime)
 }

@@ -23,6 +23,7 @@ default = ["axum", "tokio"]
 
 axum = [
   "dep:axum",
+  "dep:axum-extra",
   "dep:futures",
   "tokio",
 ]
@@ -83,6 +84,7 @@ mime = "0.3.16"
 
 # axum
 axum = {version = "0.5", features = ["matched-path"], optional = true}
+axum-extra = {version = "0.3", features = ["cookie"], optional = true}
 
 # latest deps
 hyper = {version = "0.14", optional = true}

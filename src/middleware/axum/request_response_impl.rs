@@ -2,6 +2,7 @@ use crate::generic_http::{BodyCapture, GenericCookie, GenericRequest, GenericRes
 use axum::{body::Body, extract::Host, http::Request};
 use axum_extra::extract::cookie::{Cookie, CookieJar};
 use chrono::{DateTime, NaiveDateTime, Utc};
+use http::{header::COOKIE, Response};
 
 impl GenericRequest {
     pub fn new(
@@ -60,39 +61,41 @@ fn get_request_cookies(request: &Request<Body>) -> Vec<GenericCookie> {
     }
 }
 
-// impl GenericResponse {
-//     pub(crate) fn new<T>(response: &ServiceResponse<T>) -> Self {
-//         let status = response.status();
-//         let http_version = response.request().version();
-//         let cookies = get_response_cookies(response);
+impl GenericResponse {
+    pub(crate) fn new<T>(response: &Response<T>) -> Self {
+        let status = response.status();
+        let http_version = response.version();
+        let cookies = get_response_cookies(response);
 
-//         Self {
-//             status,
-//             http_version,
-//             headers: get_response_headers(response),
-//             cookies,
-//             body: BodyCapture::Empty,
-//         }
-//     }
-// }
+        Self {
+            status,
+            http_version,
+            headers: get_response_headers(response),
+            cookies,
+            body: BodyCapture::Empty,
+        }
+    }
+}
 
-// fn get_response_headers<T>(response: &ServiceResponse<T>) -> http::HeaderMap {
-//     response
-//         .headers()
-//         .iter()
-//         .map(|(k, v)| (k.clone(), v.clone()))
-//         .collect()
-// }
+fn get_response_headers<T>(response: &Response<T>) -> http::HeaderMap {
+    response
+        .headers()
+        .iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect()
+}
 
-// fn get_response_cookies<T>(response: &ServiceResponse<T>) -> Vec<GenericCookie> {
-//     let mut cookies: Vec<GenericCookie> = Vec::new();
-
-//     for cookie in response.response().cookies() {
-//         cookies.push(cookie.into())
-//     }
-
-//     cookies
-// }
+fn get_response_cookies<T>(response: &Response<T>) -> Vec<GenericCookie> {
+    response
+        .headers()
+        .get_all(COOKIE)
+        .into_iter()
+        .filter_map(|value| value.to_str().ok())
+        .flat_map(|value| value.split(';'))
+        .filter_map(|cookie| Cookie::parse_encoded(cookie.to_owned()).ok())
+        .map(Into::into)
+        .collect()
+}
 
 impl<'a> From<Cookie<'a>> for GenericCookie {
     fn from(cookie: Cookie<'a>) -> Self {

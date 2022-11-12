@@ -6,17 +6,16 @@ use http_body::Body;
 use pin_project::pin_project;
 use std::marker::PhantomData;
 use std::sync::{Arc, RwLock};
-use std::time::Duration;
 use std::{
-    fmt,
     future::Future,
     pin::Pin,
     task::{Context, Poll},
 };
-use tokio::time::Sleep;
 use tower::{Layer, Service};
 
+use crate::async_runtime;
 use crate::controller::Controller;
+use crate::generic_http::{BodyCapture, GenericResponse};
 use crate::transport::Transport;
 
 #[derive(Clone)]
@@ -66,7 +65,7 @@ impl<ReqBody, ResBody, S, T> Service<Request<ReqBody>> for SpeakeasySdkMiddlewar
 where
     S: Service<Request<ReqBody>, Response = Response<ResBody>>,
     ResBody: Body,
-    T: Transport + Send + Clone + 'static,
+    T: Transport + Send + Sync + Clone + 'static,
 {
     type Response = Response<ResponseWithBodySender<ResBody, T>>;
     type Error = S::Error;
@@ -91,8 +90,8 @@ where
 {
     #[pin]
     body: B,
-    // generic_response: GenericResponse,
-    // controller: Option<Arc<RwLock<Controller<T>>>>,
+    generic_response: GenericResponse,
+    controller: Option<Arc<RwLock<Controller<T>>>>,
     _t: PhantomData<T>,
     body_accum: BytesMut,
     body_dropped: bool,
@@ -104,24 +103,24 @@ where
     T: Transport + Send + Clone + 'static,
 {
     fn drop(self: Pin<&mut Self>) {
-        // if let Some(controller) = self.controller.as_ref() {
-        //     let mut response = self.generic_response.clone();
+        if let Some(controller) = self.controller.as_ref() {
+            let mut response = self.generic_response.clone();
 
-        //     // set body field, initialized as empty
-        //     if self.body_dropped {
-        //         response.body = BodyCapture::Dropped
-        //     } else if !self.body_accum.is_empty() {
-        //         response.body = BodyCapture::Captured(self.body_accum.to_vec().into())
-        //     }
+            // set body field, initialized as empty
+            if self.body_dropped {
+                response.body = BodyCapture::Dropped
+            } else if !self.body_accum.is_empty() {
+                response.body = BodyCapture::Captured(self.body_accum.to_vec().into())
+            }
 
-        //     let controller: Controller<T> = controller.read().unwrap().clone();
+            let controller: Controller<T> = controller.read().unwrap().clone();
 
-        //     async_runtime::spawn_task(async move {
-        //         if let Err(error) = controller.build_and_send_har(response) {
-        //             error!("Error building and sending HAR: {}", error)
-        //         }
-        //     });
-        // }
+            async_runtime::spawn_task(async move {
+                if let Err(error) = controller.build_and_send_har(response) {
+                    log::error!("Error building and sending HAR: {}", error)
+                }
+            });
+        }
     }
 }
 
@@ -136,17 +135,22 @@ impl<F, B, E, T> Future for WrapperStream<F, T>
 where
     F: Future<Output = Result<Response<B>, E>>,
     B: Body,
-    T: Transport + Send + Clone + 'static,
+    T: Transport + Send + Sync + Clone + 'static,
 {
     type Output = Result<Response<ResponseWithBodySender<B, T>>, E>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let res = ready!(self.as_mut().project().response_future.poll(cx)?);
+        let ext = res.extensions();
+        let controller = ext.get::<Arc<RwLock<Controller<T>>>>().cloned();
 
+        let generic_response = GenericResponse::new(&res);
         let (parts, body) = res.into_parts();
 
         let body_with_sender = ResponseWithBodySender {
-            body: body,
+            body,
+            generic_response,
+            controller,
             _t: PhantomData,
             body_accum: BytesMut::new(),
             body_dropped: false,

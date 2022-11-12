@@ -1,20 +1,20 @@
 use crate::async_runtime;
 
-use http::{HeaderValue};
+use crate::speakeasy_protos::ingest::{ingest_service_client::IngestServiceClient, IngestRequest};
+use http::HeaderValue;
 use once_cell::sync::Lazy;
 use std::{str::FromStr, sync::Arc};
-use crate::speakeasy_protos::ingest::{ingest_service_client::IngestServiceClient, IngestRequest};
 
 #[cfg(feature = "tokio02")]
 
 mod tokio02 {
+    pub use hyper13::Client as HyperClient;
+    pub use hyper13::Request as HyperRequest;
+    pub use hyper13::Uri;
+    pub use hyper_openssl08::HttpsConnector;
     pub use tonic03::body::BoxBody;
     pub use tonic03::Request as TonicRequest;
-    pub use hyper13::Request as HyperRequest;
-    pub use hyper13::Client as HyperClient;
-    pub use hyper13::Uri;
     pub use tower03::service_fn;
-    pub use hyper_openssl08::HttpsConnector;
 }
 
 #[cfg(feature = "tokio02")]
@@ -22,13 +22,13 @@ use self::tokio02::*;
 
 #[cfg(feature = "tokio")]
 mod tokio {
+    pub use hyper::Client as HyperClient;
+    pub use hyper::Request as HyperRequest;
+    pub use hyper::Uri;
+    pub use hyper_openssl::HttpsConnector;
     pub use tonic::body::BoxBody;
     pub use tonic::Request as TonicRequest;
-    pub use hyper::Request as HyperRequest;
-    pub use hyper::Client as HyperClient;
-    pub use hyper::Uri;
     pub use tower::service_fn;
-    pub use hyper_openssl::HttpsConnector;
 }
 
 #[cfg(feature = "tokio")]
@@ -100,30 +100,29 @@ impl Transport for GrpcClient {
 
         let token = self.token.clone();
 
-        let add_origin =
-            service_fn(move |mut req: HyperRequest<BoxBody>| {
-                let uri = Uri::builder()
-                    .scheme(uri.scheme().unwrap().clone())
-                    .authority(authority.clone())
-                    .path_and_query(
-                        req.uri()
-                            .path_and_query()
-                            .expect("path and query always present")
-                            .clone(),
-                    )
-                    .build()
-                    .unwrap();
+        let add_origin = service_fn(move |mut req: HyperRequest<BoxBody>| {
+            let uri = Uri::builder()
+                .scheme(uri.scheme().unwrap().clone())
+                .authority(authority.clone())
+                .path_and_query(
+                    req.uri()
+                        .path_and_query()
+                        .expect("path and query always present")
+                        .clone(),
+                )
+                .build()
+                .unwrap();
 
-                *req.uri_mut() = uri;
-                req.headers_mut()
-                    .insert("x-api-key", token.as_ref().clone());
+            *req.uri_mut() = uri;
+            req.headers_mut()
+                .insert("x-api-key", token.as_ref().clone());
 
-                if *SPEAKEASY_SERVER_SECURE {
-                    client.request(req)
-                } else {
-                    insecure_client.request(req)
-                }
-            });
+            if *SPEAKEASY_SERVER_SECURE {
+                client.request(req)
+            } else {
+                insecure_client.request(req)
+            }
+        });
 
         let mut client = IngestServiceClient::new(add_origin);
         let request = TonicRequest::new(request);

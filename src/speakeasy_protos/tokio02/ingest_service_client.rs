@@ -1,6 +1,6 @@
 #![doc = r" Generated client implementations."]
 #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-use speakeasy_protos_tokio_02::ingest::{IngestResponse, IngestRequest};
+use speakeasy_protos_tokio_02::ingest::{IngestRequest, IngestResponse};
 use tonic03::codegen::*;
 #[doc = " IngestService is the service definition for the registry ingest endpoint."]
 #[derive(Debug, Clone)]

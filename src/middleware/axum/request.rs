@@ -46,6 +46,7 @@ where
     }
 }
 
+#[derive(Clone)]
 pub struct SpeakeasySdkMiddleware<S, T> {
     // This is special: We need this to avoid lifetime issues.
     inner: S,

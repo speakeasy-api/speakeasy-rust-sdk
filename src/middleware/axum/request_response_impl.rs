@@ -115,7 +115,7 @@ fn get_cookie_expiration(cookie: &Cookie) -> Option<DateTime<Utc>> {
     let expires_at = cookie.expires()?.datetime()?;
 
     let datetime = DateTime::<Utc>::from_utc(
-        NaiveDateTime::from_timestamp(expires_at.unix_timestamp(), 0),
+        NaiveDateTime::from_timestamp_opt(expires_at.unix_timestamp(), 0)?,
         Utc,
     );
 

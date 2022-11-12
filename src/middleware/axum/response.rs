@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+use bytes::{Buf, Bytes, BytesMut};
 use futures::ready;
 use http::{Request, Response};
 
@@ -14,9 +14,12 @@ use std::{
 use tower::{Layer, Service};
 
 use crate::async_runtime;
-use crate::controller::Controller;
+use crate::controller::{Controller, MAX_SIZE};
 use crate::generic_http::{BodyCapture, GenericResponse};
 use crate::transport::Transport;
+
+/// Alias for a type-erased error type.
+pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
 #[derive(Clone)]
 pub struct SpeakeasySdk<T: Transport + Send + Clone + 'static> {
@@ -80,6 +83,55 @@ where
             response_future: self.inner.call(req),
             _t: PhantomData,
         }
+    }
+}
+
+impl<B, T> Body for ResponseWithBodySender<B, T>
+where
+    B: Body,
+    B::Error: Into<BoxError>,
+    T: Transport + Send + Clone + 'static,
+{
+    type Data = Bytes;
+    type Error = BoxError;
+
+    fn poll_data(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Option<Result<Self::Data, Self::Error>>> {
+        let max_size = if let Some(controller) = self.controller.as_ref() {
+            controller.read().unwrap().max_capture_size
+        } else {
+            MAX_SIZE
+        };
+
+        let this = self.project();
+
+        match this.body.poll_data(cx) {
+            Poll::Ready(Some(Ok(mut chunk))) => {
+                if !*this.body_dropped {
+                    this.body_accum.extend_from_slice(chunk.chunk());
+
+                    if this.body_accum.len() > max_size {
+                        *this.body_dropped = true;
+                        this.body_accum.clear();
+                    }
+                }
+
+                let bytes = chunk.copy_to_bytes(chunk.remaining());
+                Poll::Ready(Some(Ok(bytes)))
+            }
+            Poll::Ready(Some(Err(e))) => Poll::Ready(Some(Err(e.into()))),
+            Poll::Ready(None) => Poll::Ready(None),
+            Poll::Pending => Poll::Pending,
+        }
+    }
+
+    fn poll_trailers(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Result<Option<http::HeaderMap>, Self::Error>> {
+        self.project().body.poll_trailers(cx).map_err(Into::into)
     }
 }
 

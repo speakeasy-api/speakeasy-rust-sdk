@@ -1,8 +1,8 @@
 use axum::{
-    body::{Body, Bytes},
-    extract::Path,
-    http::{Request, StatusCode},
-    response::{IntoResponse, Response},
+    body::Bytes,
+    extract::{DefaultBodyLimit, Path},
+    http::StatusCode,
+    response::IntoResponse,
     routing::{get, post},
     Extension, Json, Router,
 };
@@ -37,7 +37,7 @@ async fn upload(item: Bytes) -> impl IntoResponse {
     println!("bytes length: {:?}", item.len());
     use std::{fs::File, io::Write};
 
-    let mut file = File::create("uploads/copied.png").unwrap();
+    let mut file = File::create("uploads/copied.mov").unwrap();
     file.write_all(&item).unwrap();
 
     "Uploaded".to_string()
@@ -108,16 +108,17 @@ async fn main() {
 
     // build our application with a route
     let app = Router::new()
-        .route("/", get(index))
+        .route("/", post(index))
         .route("/greet/:name", get(greet))
         .route("/use_controller", post(use_controller))
         .route("/upload", post(upload))
+        .layer(DefaultBodyLimit::max(1024 * 1024 * 5))
         .layer(ServiceBuilder::new().layer(request_capture))
         .layer(ServiceBuilder::new().layer(response_capture));
 
     // run our app with hyper
     // `axum::Server` is a re-export of `hyper::Server`
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
     tracing::debug!("listening on {}", addr);
 
     axum::Server::bind(&addr)

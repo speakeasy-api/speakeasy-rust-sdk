@@ -1,8 +1,9 @@
 //! Middleware for Axum
 
-// mod request_response_impl;
+mod request_response_impl;
 
 pub(crate) mod request;
+pub(crate) mod response;
 
 use crate::{transport::Transport, GenericSpeakeasySdk};
 

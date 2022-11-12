@@ -1,19 +1,22 @@
-use std::future::Future;
+use bytes::BytesMut;
+use futures::ready;
+use http::{Request, Response};
+
+use http_body::Body;
+use pin_project::pin_project;
 use std::marker::PhantomData;
-use std::pin::Pin;
 use std::sync::{Arc, RwLock};
-use std::task::{Context, Poll};
+use std::time::Duration;
+use std::{
+    fmt,
+    future::Future,
+    pin::Pin,
+    task::{Context, Poll},
+};
+use tokio::time::Sleep;
+use tower::{Layer, Service};
 
-use actix3::body::{BodySize, MessageBody, ResponseBody};
-use actix3::web::{Bytes, BytesMut};
-use actix3::{dev::ServiceRequest, dev::ServiceResponse, Error};
-use actix_service1::{Service, Transform};
-use futures::future::{ok, Ready};
-use log::error;
-
-use crate::async_runtime;
-use crate::controller::{Controller, MAX_SIZE};
-use crate::generic_http::{BodyCapture, GenericResponse};
+use crate::controller::Controller;
 use crate::transport::Transport;
 
 #[derive(Clone)]
@@ -30,94 +33,54 @@ where
     }
 }
 
-impl<S: 'static, B, T> Transform<S> for SpeakeasySdk<T>
+impl<S, T> Layer<S> for SpeakeasySdk<T>
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
-    B: MessageBody + 'static,
     T: Transport + Send + Clone + 'static,
 {
-    type Request = ServiceRequest;
-    type Response = ServiceResponse<ResponseWithBodySender<B, T>>;
-    type Error = Error;
-    type InitError = ();
-    type Transform = SpeakeasySdkMiddleware<S, T>;
-    type Future = Ready<Result<Self::Transform, Self::InitError>>;
+    type Service = SpeakeasySdkMiddleware<S, T>;
 
-    fn new_transform(&self, service: S) -> Self::Future {
-        ok(SpeakeasySdkMiddleware {
-            _t: PhantomData,
-            service,
-        })
+    fn layer(&self, service: S) -> Self::Service {
+        SpeakeasySdkMiddleware::new(service)
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct SpeakeasySdkMiddleware<S, T: Transport + Send + Clone + 'static> {
     _t: PhantomData<T>,
-    service: S,
+    inner: S,
 }
 
-impl<S, B, T> Service for SpeakeasySdkMiddleware<S, T>
+impl<S, T> SpeakeasySdkMiddleware<S, T>
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
-    B: MessageBody,
     T: Transport + Send + Clone + 'static,
 {
-    type Request = ServiceRequest;
-    type Response = ServiceResponse<ResponseWithBodySender<B, T>>;
-    type Error = Error;
-    type Future = WrapperStream<S, B, T>;
-
-    fn poll_ready(&mut self, cx: &mut Context) -> Poll<Result<(), Self::Error>> {
-        self.service.poll_ready(cx)
-    }
-
-    fn call(&mut self, req: ServiceRequest) -> Self::Future {
-        WrapperStream {
-            fut: self.service.call(req),
+    fn new(inner: S) -> Self {
+        Self {
+            inner,
             _t: PhantomData,
         }
     }
 }
 
-#[pin_project::pin_project]
-pub struct WrapperStream<S, B, T>
+impl<ReqBody, ResBody, S, T> Service<Request<ReqBody>> for SpeakeasySdkMiddleware<S, T>
 where
-    B: MessageBody,
-    S: Service,
-{
-    #[pin]
-    fut: S::Future,
-    _t: PhantomData<(B, T)>,
-}
-
-impl<S, B, T> Future for WrapperStream<S, B, T>
-where
-    B: MessageBody,
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
+    S: Service<Request<ReqBody>, Response = Response<ResBody>>,
+    ResBody: Body,
     T: Transport + Send + Clone + 'static,
 {
-    type Output = Result<ServiceResponse<ResponseWithBodySender<B, T>>, Error>;
+    type Response = Response<ResponseWithBodySender<ResBody, T>>;
+    type Error = S::Error;
+    type Future = WrapperStream<S::Future, T>;
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let res = futures::ready!(self.project().fut.poll(cx));
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.inner.poll_ready(cx)
+    }
 
-        Poll::Ready(res.map(|res| {
-            let ext = res.request().head().extensions();
-            let controller = ext.get::<Arc<RwLock<Controller<T>>>>().cloned();
-            drop(ext);
-
-            let generic_response = GenericResponse::new(&res);
-
-            res.map_body(move |_head, body| {
-                ResponseBody::Body(ResponseWithBodySender {
-                    body,
-                    generic_response,
-                    controller,
-                    body_dropped: false,
-                    body_accum: BytesMut::new(),
-                })
-            })
-        }))
+    fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
+        WrapperStream {
+            response_future: self.inner.call(req),
+            _t: PhantomData,
+        }
     }
 }
 
@@ -127,9 +90,10 @@ where
     T: Transport + Send + Clone + 'static,
 {
     #[pin]
-    body: ResponseBody<B>,
-    generic_response: GenericResponse,
-    controller: Option<Arc<RwLock<Controller<T>>>>,
+    body: B,
+    // generic_response: GenericResponse,
+    // controller: Option<Arc<RwLock<Controller<T>>>>,
+    _t: PhantomData<T>,
     body_accum: BytesMut,
     body_dropped: bool,
 }
@@ -140,60 +104,55 @@ where
     T: Transport + Send + Clone + 'static,
 {
     fn drop(self: Pin<&mut Self>) {
-        if let Some(controller) = self.controller.as_ref() {
-            let mut response = self.generic_response.clone();
+        // if let Some(controller) = self.controller.as_ref() {
+        //     let mut response = self.generic_response.clone();
 
-            // set body field, initialized as empty
-            if self.body_dropped {
-                response.body = BodyCapture::Dropped
-            } else if !self.body_accum.is_empty() {
-                response.body = BodyCapture::Captured(self.body_accum.to_vec().into())
-            }
+        //     // set body field, initialized as empty
+        //     if self.body_dropped {
+        //         response.body = BodyCapture::Dropped
+        //     } else if !self.body_accum.is_empty() {
+        //         response.body = BodyCapture::Captured(self.body_accum.to_vec().into())
+        //     }
 
-            let controller: Controller<T> = controller.read().unwrap().clone();
+        //     let controller: Controller<T> = controller.read().unwrap().clone();
 
-            async_runtime::spawn_task(async move {
-                if let Err(error) = controller.build_and_send_har(response) {
-                    error!("Error building and sending HAR: {}", error)
-                }
-            });
-        }
+        //     async_runtime::spawn_task(async move {
+        //         if let Err(error) = controller.build_and_send_har(response) {
+        //             error!("Error building and sending HAR: {}", error)
+        //         }
+        //     });
+        // }
     }
 }
 
-impl<B: MessageBody, T> MessageBody for ResponseWithBodySender<B, T>
+#[pin_project]
+pub struct WrapperStream<F, T> {
+    #[pin]
+    response_future: F,
+    _t: PhantomData<T>,
+}
+
+impl<F, B, E, T> Future for WrapperStream<F, T>
 where
+    F: Future<Output = Result<Response<B>, E>>,
+    B: Body,
     T: Transport + Send + Clone + 'static,
 {
-    fn size(&self) -> BodySize {
-        self.body.size()
-    }
+    type Output = Result<Response<ResponseWithBodySender<B, T>>, E>;
 
-    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Result<Bytes, Error>>> {
-        let max_size = if let Some(controller) = self.controller.as_ref() {
-            controller.read().unwrap().max_capture_size
-        } else {
-            MAX_SIZE
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let res = ready!(self.as_mut().project().response_future.poll(cx)?);
+
+        let (parts, body) = res.into_parts();
+
+        let body_with_sender = ResponseWithBodySender {
+            body: body,
+            _t: PhantomData,
+            body_accum: BytesMut::new(),
+            body_dropped: false,
         };
 
-        let this = self.project();
-
-        match this.body.poll_next(cx) {
-            Poll::Ready(Some(Ok(chunk))) => {
-                if !*this.body_dropped {
-                    this.body_accum.extend_from_slice(&chunk);
-
-                    if this.body_accum.len() > max_size {
-                        *this.body_dropped = true;
-                        this.body_accum.clear();
-                    }
-                }
-
-                Poll::Ready(Some(Ok(chunk)))
-            }
-            Poll::Ready(Some(Err(e))) => Poll::Ready(Some(Err(e))),
-            Poll::Ready(None) => Poll::Ready(None),
-            Poll::Pending => Poll::Pending,
-        }
+        let res = Response::from_parts(parts, body_with_sender);
+        Poll::Ready(Ok(res))
     }
 }

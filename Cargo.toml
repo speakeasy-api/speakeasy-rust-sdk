@@ -18,13 +18,12 @@ exclude = [
 # all-features = true
 
 [features]
-# TODO: delete
-default = ["axum", "tokio"]
-
 axum = [
   "dep:axum",
   "dep:axum-extra",
   "dep:futures",
+  "dep:http-body",
+  "dep:pin-project",
   "tokio",
 ]
 
@@ -87,6 +86,7 @@ axum = {version = "0.5", features = ["matched-path"], optional = true}
 axum-extra = {version = "0.3", features = ["cookie"], optional = true}
 
 # latest deps
+http-body = {version = "0.4", optional = true}
 hyper = {version = "0.14", optional = true}
 hyper-openssl = {version = "0.9", optional = true}
 speakeasy-protos-tokio-latest = {version = "0.1.0", optional = true}

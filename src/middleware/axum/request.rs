@@ -2,17 +2,13 @@ use std::sync::{Arc, RwLock};
 use std::task::{Context, Poll};
 
 use axum::extract::MatchedPath;
-use http::header::CONTENT_LENGTH;
 use bytes::BytesMut;
 use chrono::Utc;
-use futures::{future::{BoxFuture}, stream::StreamExt};
+use futures::{future::BoxFuture, stream::StreamExt};
+use http::header::CONTENT_LENGTH;
 
-use axum::{
-    response::Response,
-    body::Body,
-    http::Request,
-};
-use tower::{Service, Layer};
+use axum::{body::Body, http::Request, response::Response};
+use tower::{Layer, Service};
 
 use crate::controller::Controller;
 use crate::generic_http::{BodyCapture, GenericRequest};
@@ -23,8 +19,7 @@ use crate::{path_hint, GenericSpeakeasySdk};
 pub struct SpeakeasySdk<T>
 where
     T: Transport + Send + Clone + 'static,
- {
-    
+{
     sdk: GenericSpeakeasySdk<T>,
 }
 
@@ -37,13 +32,17 @@ where
     }
 }
 
-impl<S,T: Transport> Layer<S> for SpeakeasySdk<T> 
-where T: Transport + Send + Clone + 'static {
-
+impl<S, T: Transport> Layer<S> for SpeakeasySdk<T>
+where
+    T: Transport + Send + Clone + 'static,
+{
     type Service = SpeakeasySdkMiddleware<S, T>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        SpeakeasySdkMiddleware { sdk: self.sdk.clone(), inner }
+        SpeakeasySdkMiddleware {
+            sdk: self.sdk.clone(),
+            inner,
+        }
     }
 }
 
@@ -53,11 +52,11 @@ pub struct SpeakeasySdkMiddleware<S, T> {
     sdk: GenericSpeakeasySdk<T>,
 }
 
-impl<S,T> Service<Request<Body>> for SpeakeasySdkMiddleware<S,T>
+impl<S, T> Service<Request<Body>> for SpeakeasySdkMiddleware<S, T>
 where
     S: Service<Request<Body>, Response = Response> + Send + Clone + 'static,
     S::Future: Send + 'static,
-    T: Transport + Send  + Sync  + Clone + 'static ,
+    T: Transport + Send + Sync + Clone + 'static,
 {
     type Response = S::Response;
     type Error = S::Error;
@@ -80,7 +79,9 @@ where
 
             let headers = request.headers();
 
-            let path_hint = request.extensions().get::<MatchedPath>() 
+            let path_hint = request
+                .extensions()
+                .get::<MatchedPath>()
                 .map(|path_hint| path_hint::normalize(path_hint.as_str()));
 
             // attempt to content length from headers
@@ -96,12 +97,11 @@ where
                 }
 
                 // take the payload stream out of the request to work with it
-                let mut payload_stream = request.body_mut();
-
+                let payload_stream = request.body_mut();
 
                 // create new empty payload, we will fill put the original payload back into this
                 // and put back into the request after we have captured the body
-                let (mut payload_sender, mut payload) = Body::channel();
+                let (mut payload_sender, payload) = Body::channel();
 
                 while let Some(chunk) = payload_stream.next().await {
                     captured_body.extend_from_slice(&chunk.unwrap());
@@ -114,7 +114,10 @@ where
                 }
 
                 // put read data into the new payload
-                payload_sender.send_data(captured_body.clone().freeze()).await.unwrap();
+                payload_sender
+                    .send_data(captured_body.clone().freeze())
+                    .await
+                    .unwrap();
 
                 if max_reached {
                     // if max size is reached, send the rest of the data straight into the new payload
@@ -141,7 +144,8 @@ where
             let generic_request = GenericRequest::new(&request, start_time, path_hint, body);
             controller.set_request(generic_request);
 
-            request.extensions_mut()
+            request
+                .extensions_mut()
                 .insert(Arc::new(RwLock::new(controller)));
 
             let response = svc.call(request).await?;

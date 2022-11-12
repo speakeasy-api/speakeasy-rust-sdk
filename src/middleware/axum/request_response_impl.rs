@@ -60,39 +60,39 @@ fn get_request_cookies(request: &Request<Body>) -> Vec<GenericCookie> {
     }
 }
 
-impl GenericResponse {
-    pub(crate) fn new<T>(response: &ServiceResponse<T>) -> Self {
-        let status = response.status();
-        let http_version = response.request().version();
-        let cookies = get_response_cookies(response);
+// impl GenericResponse {
+//     pub(crate) fn new<T>(response: &ServiceResponse<T>) -> Self {
+//         let status = response.status();
+//         let http_version = response.request().version();
+//         let cookies = get_response_cookies(response);
 
-        Self {
-            status,
-            http_version,
-            headers: get_response_headers(response),
-            cookies,
-            body: BodyCapture::Empty,
-        }
-    }
-}
+//         Self {
+//             status,
+//             http_version,
+//             headers: get_response_headers(response),
+//             cookies,
+//             body: BodyCapture::Empty,
+//         }
+//     }
+// }
 
-fn get_response_headers<T>(response: &ServiceResponse<T>) -> http::HeaderMap {
-    response
-        .headers()
-        .iter()
-        .map(|(k, v)| (k.clone(), v.clone()))
-        .collect()
-}
+// fn get_response_headers<T>(response: &ServiceResponse<T>) -> http::HeaderMap {
+//     response
+//         .headers()
+//         .iter()
+//         .map(|(k, v)| (k.clone(), v.clone()))
+//         .collect()
+// }
 
-fn get_response_cookies<T>(response: &ServiceResponse<T>) -> Vec<GenericCookie> {
-    let mut cookies: Vec<GenericCookie> = Vec::new();
+// fn get_response_cookies<T>(response: &ServiceResponse<T>) -> Vec<GenericCookie> {
+//     let mut cookies: Vec<GenericCookie> = Vec::new();
 
-    for cookie in response.response().cookies() {
-        cookies.push(cookie.into())
-    }
+//     for cookie in response.response().cookies() {
+//         cookies.push(cookie.into())
+//     }
 
-    cookies
-}
+//     cookies
+// }
 
 impl<'a> From<Cookie<'a>> for GenericCookie {
     fn from(cookie: Cookie<'a>) -> Self {

@@ -194,7 +194,12 @@ where
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let res = ready!(self.as_mut().project().response_future.poll(cx)?);
         let ext = res.extensions();
+
         let controller = ext.get::<Arc<RwLock<Controller<T>>>>().cloned();
+
+        if controller.is_none() {
+            log::error!("No controller found in extensions, please add request layer to your axum service");
+        }
 
         let generic_response = GenericResponse::new(&res);
         let (parts, body) = res.into_parts();

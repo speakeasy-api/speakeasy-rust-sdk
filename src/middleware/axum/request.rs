@@ -145,11 +145,13 @@ where
             let generic_request = GenericRequest::new(&request, start_time, path_hint, body);
             controller.set_request(generic_request);
 
-            request
-                .extensions_mut()
-                .insert(Arc::new(RwLock::new(controller)));
+            let controller_in_arc = Arc::new(RwLock::new(controller));
 
-            let response = svc.call(request).await?;
+            request.extensions_mut().insert(controller_in_arc.clone());
+
+            let mut response = svc.call(request).await?;
+
+            response.extensions_mut().insert(controller_in_arc);
 
             Ok(response)
         })

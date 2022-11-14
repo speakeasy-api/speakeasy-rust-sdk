@@ -3,7 +3,7 @@
     "version": "1.2",
     "creator": {
       "name": "speakeasy-rust-sdk",
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "entries": [
       {
@@ -25,7 +25,7 @@
             },
             {
               "name": "content-length",
-              "value": "16"
+              "value": "15"
             },
             {
               "name": "content-type",
@@ -40,10 +40,10 @@
           "postData": {
             "mimeType": "application/json",
             "params": [],
-            "text": "{\"test\": \"test\"}"
+            "text": "{\"test\":\"test\"}"
           },
           "headersSize": 119,
-          "bodySize": 16
+          "bodySize": 15
         },
         "response": {
           "status": 200,

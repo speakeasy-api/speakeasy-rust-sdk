@@ -3,7 +3,7 @@
     "version": "1.2",
     "creator": {
       "name": "speakeasy-rust-sdk",
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "entries": [
       {
@@ -57,7 +57,7 @@
             "text": "test"
           },
           "redirectURL": "http://test.com/test2",
-          "headersSize": 92,
+          "headersSize": 93,
           "bodySize": 4
         },
         "cache": {},

@@ -1,40 +1,40 @@
 {
   "log": {
-    "version": "1.2",
+    "comment": "request capture for /test",
     "creator": {
       "name": "speakeasy-rust-sdk",
       "version": "0.1.1"
     },
+    "version": "1.2",
     "entries": [
       {
         "startedDateTime": "2020-01-01T00:00:00Z",
         "time": 1,
         "request": {
           "method": "GET",
-          "url": "/test?param1=value1",
+          "url": "/test",
           "httpVersion": "HTTP/1.1",
           "cookies": [],
           "headers": [
             {
-              "name": "accept-encoding",
-              "value": "gzip, deflate"
-            },
-            {
-              "name": "connection",
-              "value": "close"
-            },
-            {
               "name": "host",
               "value": "test.com"
-            }
-          ],
-          "queryString": [
+            },
             {
-              "name": "param1",
-              "value": "value1"
+              "name": "vary",
+              "value": "Origin"
+            },
+            {
+              "name": "vary",
+              "value": "Access-Control-Request-Method"
+            },
+            {
+              "name": "vary",
+              "value": "Access-Control-Request-Headers"
             }
           ],
-          "headersSize": 67,
+          "queryString": [],
+          "headersSize": 89,
           "bodySize": -1
         },
         "response": {
@@ -50,6 +50,18 @@
             {
               "name": "content-type",
               "value": "text/plain; charset=utf-8"
+            },
+            {
+              "name": "vary",
+              "value": "Origin"
+            },
+            {
+              "name": "vary",
+              "value": "Access-Control-Request-Method"
+            },
+            {
+              "name": "vary",
+              "value": "Access-Control-Request-Headers"
             }
           ],
           "content": {
@@ -58,7 +70,7 @@
             "text": "test"
           },
           "redirectURL": "",
-          "headersSize": 60,
+          "headersSize": 149,
           "bodySize": 4
         },
         "cache": {},
@@ -69,7 +81,6 @@
         },
         "serverIPAddress": "test.com"
       }
-    ],
-    "comment": "request capture for /test?param1=value1"
+    ]
   }
 }

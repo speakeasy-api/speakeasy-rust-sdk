@@ -172,7 +172,7 @@ impl<T: Default> BodyMask<T> {
                         .get_mask_replacement(&field_without_quotes, index);
 
                     format!(
-                        r#"{}: "{}"{}"#,
+                        r#"{}:"{}"{}"#,
                         field,
                         replacement_mask,
                         caps[0].chars().last().unwrap()
@@ -197,7 +197,7 @@ impl<T: Default> BodyMask<T> {
                         .get_mask_replacement(&field_without_quotes, index);
 
                     format!(
-                        r#"{}: {}{}"#,
+                        r#"{}:{}{}"#,
                         field,
                         replacement_mask,
                         caps[0].chars().last().unwrap()

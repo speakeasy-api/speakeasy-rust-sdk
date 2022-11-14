@@ -225,7 +225,7 @@ The `Masking` struct can be set with a number of different options to mask sensi
 - `masking.with_response_field_mask_string` - **with_response_field_mask_string** will mask the specified response body fields with an optional mask. Supports string fields only. Matches using regex.
 - `masking.with_response_field_mask_number` - **with_response_field_mask_number** will mask the specified response body fields with an optional mask. Supports number fields only. Matches using regex.
 
-For complete docs on masking see the [docs.rs/speakeasy-sdk-rust](https://docs.rs/speakeasy-sdk-rust)
+For complete docs on masking see the [docs.rs/speakeasy-rust-sdk](https://docs.rs/speakeasy-rust-sdk/latest/speakeasy_rust_sdk/)
 
 ### Examples
 

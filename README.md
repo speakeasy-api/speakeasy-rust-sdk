@@ -10,6 +10,7 @@ The Speakeasy Rust SDK for evaluating API requests/responses. Currently compatib
 
 Supported Frameworks:
 
+- Axum
 - Actix 3
 
 ## Usage
@@ -27,12 +28,14 @@ cargo add speakeasy-rust-sdk --features actix3
 Or add it directly to your `Cargo.toml`
 
 ```toml
-speakeasy-rust-sdk = {version = "0.1.0", features = ["actix3"]}
+speakeasy-rust-sdk = {version = "0.2.0", features = ["actix3"]}
 ```
 
 ### Minimum configuration
 
 [Sign up for free on our platform](https://www.speakeasyapi.dev/). After you've created a workspace and generated an API key enable Speakeasy in your API as follows:
+
+_(for axum configuration see the example at [examples/axum/](examples/axum/src/main.rs))_
 
 Configure Speakeasy at the start of your `main()` function:
 
@@ -226,5 +229,6 @@ For complete docs on masking see the [docs.rs/speakeasy-sdk-rust](https://docs.r
 
 ### Examples
 
+- Axum - [examples/axum/](examples/axum/)
 - Actix3 - [examples/actix3/](examples/actix3/)
 - Actix3 Test Server - [testserver/](testserver/)

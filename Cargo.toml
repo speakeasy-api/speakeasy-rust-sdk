@@ -6,7 +6,7 @@ homepage = "https://www.speakeasyapi.dev"
 license-file = "LICENSE"
 name = "speakeasy-rust-sdk"
 repository = "https://github.com/speakeasy-api/speakeasy-rust-sdk"
-version = "0.1.1"
+version = "0.2.0"
 
 exclude = [
   "examples",

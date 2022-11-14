@@ -1,10 +1,38 @@
 use crate::async_runtime;
 
 use crate::speakeasy_protos::ingest::{ingest_service_client::IngestServiceClient, IngestRequest};
-use http::{HeaderValue, Uri};
+use http::HeaderValue;
 use once_cell::sync::Lazy;
 use std::{str::FromStr, sync::Arc};
-use tonic03::Request;
+
+#[cfg(feature = "tokio02")]
+
+mod tokio02 {
+    pub use hyper13::Client as HyperClient;
+    pub use hyper13::Request as HyperRequest;
+    pub use hyper13::Uri;
+    pub use hyper_openssl08::HttpsConnector;
+    pub use tonic03::body::BoxBody;
+    pub use tonic03::Request as TonicRequest;
+    pub use tower03::service_fn;
+}
+
+#[cfg(feature = "tokio02")]
+use self::tokio02::*;
+
+#[cfg(feature = "tokio")]
+mod tokio {
+    pub use hyper::Client as HyperClient;
+    pub use hyper::Request as HyperRequest;
+    pub use hyper::Uri;
+    pub use hyper_openssl::HttpsConnector;
+    pub use tonic::body::BoxBody;
+    pub use tonic::Request as TonicRequest;
+    pub use tower::service_fn;
+}
+
+#[cfg(feature = "tokio")]
+use self::tokio::*;
 
 pub(crate) static SPEAKEASY_SERVER_SECURE: Lazy<bool> = Lazy::new(|| {
     !matches!(
@@ -58,12 +86,12 @@ impl Transport for GrpcClient {
         // NOTE: Using hyper directly as there seems to be a bug with tonic v0.3 throwing
         // an error from rustls. When making the middleware for actix4 we can hopefully
         // avoid doing this and just use the client directly from tonic.
-        let insecure_client = hyper::Client::builder().http2_only(true).build_http();
-        let client = hyper::Client::builder()
+        let insecure_client = HyperClient::builder().http2_only(true).build_http();
+        let client = HyperClient::builder()
             .http2_only(true)
-            .build(hyper_openssl::HttpsConnector::new().expect("Need OpenSSL"));
+            .build(HttpsConnector::new().expect("Need OpenSSL"));
 
-        let uri = hyper::Uri::from_str(&SPEAKEASY_SERVER_URL).unwrap();
+        let uri = Uri::from_str(&SPEAKEASY_SERVER_URL).unwrap();
 
         let authority = uri
             .authority()
@@ -72,33 +100,32 @@ impl Transport for GrpcClient {
 
         let token = self.token.clone();
 
-        let add_origin =
-            tower::service_fn(move |mut req: hyper::Request<tonic03::body::BoxBody>| {
-                let uri = Uri::builder()
-                    .scheme(uri.scheme().unwrap().clone())
-                    .authority(authority.clone())
-                    .path_and_query(
-                        req.uri()
-                            .path_and_query()
-                            .expect("path and query always present")
-                            .clone(),
-                    )
-                    .build()
-                    .unwrap();
+        let add_origin = service_fn(move |mut req: HyperRequest<BoxBody>| {
+            let uri = Uri::builder()
+                .scheme(uri.scheme().unwrap().clone())
+                .authority(authority.clone())
+                .path_and_query(
+                    req.uri()
+                        .path_and_query()
+                        .expect("path and query always present")
+                        .clone(),
+                )
+                .build()
+                .unwrap();
 
-                *req.uri_mut() = uri;
-                req.headers_mut()
-                    .insert("x-api-key", token.as_ref().clone());
+            *req.uri_mut() = uri;
+            req.headers_mut()
+                .insert("x-api-key", token.as_ref().clone());
 
-                if *SPEAKEASY_SERVER_SECURE {
-                    client.request(req)
-                } else {
-                    insecure_client.request(req)
-                }
-            });
+            if *SPEAKEASY_SERVER_SECURE {
+                client.request(req)
+            } else {
+                insecure_client.request(req)
+            }
+        });
 
         let mut client = IngestServiceClient::new(add_origin);
-        let request = Request::new(request);
+        let request = TonicRequest::new(request);
 
         async_runtime::spawn_task(async move {
             let response = client.ingest(request).await;

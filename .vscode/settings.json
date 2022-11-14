@@ -1,6 +1,8 @@
 {
   "rust-analyzer.linkedProjects": [
-    "examples/actix3/Cargo.toml",
-    "testserver/Cargo.toml"
-  ]
+    // "examples/actix3/Cargo.toml",
+    // "testserver/Cargo.toml"
+  ],
+  // "rust-analyzer.cargo.features": ["actix3", "tokio02"]
+  "rust-analyzer.cargo.features": ["axum", "tokio"]
 }

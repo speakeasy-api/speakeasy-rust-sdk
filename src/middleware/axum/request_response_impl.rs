@@ -1,5 +1,8 @@
-use crate::generic_http::{BodyCapture, GenericCookie, GenericRequest, GenericResponse};
-use axum::{body::Body, extract::Host, http::Request};
+use crate::{
+    generic_http::{BodyCapture, GenericCookie, GenericRequest, GenericResponse},
+    middleware::host_extract::Host,
+};
+use axum::{body::Body, http::Request};
 use axum_extra::extract::cookie::{Cookie, CookieJar};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use http::{header::COOKIE, Response};
@@ -17,8 +20,8 @@ impl GenericRequest {
         let scheme = request.uri().scheme_str().unwrap_or("http").to_string();
         let path = request.uri().path().to_string();
 
-        let host = if let Some(host) = request.extensions().get::<Host>() {
-            host.0.clone()
+        let host = if let Some(host) = Host::from_request(request) {
+            host.take_string()
         } else {
             log::debug!("unable to extract host, falling back to localhost");
             "localhost".to_string()

@@ -22,13 +22,13 @@ Documentation available at: [docs.rs/speakeasy-rust-sdk](<(https://docs.rs/speak
 Run:
 
 ```
-cargo add speakeasy-rust-sdk --features actix3
+cargo add speakeasy-rust-sdk --features actix4
 ```
 
 Or add it directly to your `Cargo.toml`
 
 ```toml
-speakeasy-rust-sdk = {version = "0.2.0", features = ["actix3"]}
+speakeasy-rust-sdk = {version = "0.2.0", features = ["actix4"]}
 ```
 ### Minimum configuration
 

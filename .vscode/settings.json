@@ -4,5 +4,5 @@
     // "testserver/Cargo.toml"
   ],
   // "rust-analyzer.cargo.features": ["actix3", "tokio02"]
-  "rust-analyzer.cargo.features": ["axum", "tokio"]
+  "rust-analyzer.cargo.features": ["actix4", "tokio"]
 }

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2022-11-04
+
+- Add middleware for the Axum framework
+
 ## [0.1.1] - 2022-09-29
 
 - Fix docs for docs.rs not being built

@@ -9,6 +9,7 @@ The Speakeasy Rust SDK for evaluating API requests/responses. Currently compatib
 
 Supported Frameworks:
 
+- Axum
 - Actix 3
 
 ## Usage
@@ -17,10 +18,17 @@ Available on crates: [crates.io/crates/speakeasy-rust-sdk](https://crates.io/cra
 
 Documentation available at: [docs.rs/speakeasy-rust-sdk](<(https://docs.rs/speakeasy-rust-sdk)>)
 
-```toml
-speakeasy-rust-sdk = "0.1.0"
+Run:
+
+```
+cargo add speakeasy-rust-sdk --features actix3
 ```
 
+Or add it directly to your `Cargo.toml`
+
+```toml
+speakeasy-rust-sdk = {version = "0.2.0", features = ["actix3"]}
+```
 ### Minimum configuration
 
 [Sign up for free on our platform](https://www.speakeasyapi.dev/). After you've created a workspace and generated an API key enable Speakeasy in your API as follows:

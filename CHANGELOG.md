@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2022-11-15
+
+- Add middleware for the Actix framework (version 4)
+
 ## [0.2.0] - 2022-11-04
 
 - Add middleware for the Axum framework

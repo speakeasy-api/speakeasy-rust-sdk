@@ -6,7 +6,7 @@ homepage = "https://www.speakeasyapi.dev"
 license = "Apache-2.0"
 name = "speakeasy-rust-sdk"
 repository = "https://github.com/speakeasy-api/speakeasy-rust-sdk"
-version = "0.2.0"
+version = "0.3.0"
 
 exclude = [
   "examples",

@@ -3,13 +3,14 @@
 
 Speakeasy is your API Platform team as a service. Use our drop in SDK to manage all your API Operations including embeds for request logs and usage dashboards, test case generation from traffic, and understanding API drift.
 
-The Speakeasy Rust SDK for evaluating API requests/responses. Currently compatible with actix3.
+The Speakeasy Rust SDK for evaluating API requests/responses. Currently compatible with axum and actix.
 
 ## Requirements
 
 Supported Frameworks:
 
 - Axum
+- Actix 4
 - Actix 3
 
 ## Usage

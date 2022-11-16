@@ -1,6 +1,8 @@
 use crate::generic_http::{BodyCapture, GenericCookie, GenericRequest, GenericResponse};
-use actix3::dev::{ServiceRequest, ServiceResponse};
-use actix_http2::{http::Cookie, HttpMessage};
+use actix_web::{
+    cookie::Cookie,
+    dev::{ServiceRequest, ServiceResponse},
+};
 use chrono::{DateTime, NaiveDateTime, Utc};
 
 impl GenericRequest {
@@ -104,7 +106,7 @@ impl<'a> From<Cookie<'a>> for GenericCookie {
 }
 
 fn get_cookie_expiration(cookie: &Cookie) -> Option<DateTime<Utc>> {
-    let expires_at = cookie.expires()?;
+    let expires_at = cookie.expires()?.datetime()?;
 
     let datetime = DateTime::<Utc>::from_utc(
         NaiveDateTime::from_timestamp_opt(expires_at.unix_timestamp(), 0)?,

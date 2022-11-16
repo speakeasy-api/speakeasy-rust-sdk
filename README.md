@@ -4,13 +4,14 @@
 
 Speakeasy is your API Platform team as a service. Use our drop in SDK to manage all your API Operations including embeds for request logs and usage dashboards, test case generation from traffic, and understanding API drift.
 
-The Speakeasy Rust SDK for evaluating API requests/responses. Currently compatible with actix3.
+The Speakeasy Rust SDK for evaluating API requests/responses. Currently compatible with axum and actix.
 
 ## Requirements
 
 Supported Frameworks:
 
 - Axum
+- Actix 4
 - Actix 3
 
 ## Usage
@@ -22,13 +23,13 @@ Documentation available at: [docs.rs/speakeasy-rust-sdk](https://docs.rs/speakea
 Run:
 
 ```
-cargo add speakeasy-rust-sdk --features actix3
+cargo add speakeasy-rust-sdk --features actix4
 ```
 
 Or add it directly to your `Cargo.toml`
 
 ```toml
-speakeasy-rust-sdk = {version = "0.2.0", features = ["actix3"]}
+speakeasy-rust-sdk = {version = "0.3.0", features = ["actix4"]}
 ```
 
 ### Minimum configuration
@@ -230,5 +231,6 @@ For complete docs on masking see the [docs.rs/speakeasy-rust-sdk](https://docs.r
 ### Examples
 
 - Axum - [examples/axum/](examples/axum/)
+- Actix4 - [examples/actix4/](examples/actix4/)
 - Actix3 - [examples/actix3/](examples/actix3/)
 - Actix3 Test Server - [testserver/](testserver/)

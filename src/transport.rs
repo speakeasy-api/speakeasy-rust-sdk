@@ -1,5 +1,9 @@
-use crate::async_runtime;
+use crate::{async_runtime, Error};
 
+use crate::speakeasy_protos::embedaccesstoken::embed_access_token_service_client::EmbedAccessTokenServiceClient;
+use crate::speakeasy_protos::embedaccesstoken::{
+    EmbedAccessTokenRequest, EmbedAccessTokenResponse,
+};
 use crate::speakeasy_protos::ingest::{ingest_service_client::IngestServiceClient, IngestRequest};
 use http::HeaderValue;
 use once_cell::sync::Lazy;
@@ -76,6 +80,61 @@ impl GrpcClient {
             token: Arc::new(token),
         })
     }
+
+    pub async fn get_embedded_access_token(
+        &self,
+        request: EmbedAccessTokenRequest,
+    ) -> Result<EmbedAccessTokenResponse, Error> {
+        // NOTE: Using hyper directly as there seems to be a bug with tonic v0.3 throwing
+        // an error from rustls. When making the middleware for actix4 we can hopefully
+        // avoid doing this and just use the client directly from tonic.
+        let uri = Uri::from_str(&SPEAKEASY_SERVER_URL).unwrap();
+        let authority = uri
+            .authority()
+            .ok_or_else(|| Error::InvalidServerError("authority".to_string()))?
+            .clone();
+
+        let token = self.token.clone();
+
+        let add_origin = service_fn(move |mut req: HyperRequest<BoxBody>| {
+            let uri = Uri::builder()
+                .scheme(uri.scheme().unwrap().clone())
+                .authority(authority.clone())
+                .path_and_query(
+                    req.uri()
+                        .path_and_query()
+                        .expect("path and query always present")
+                        .clone(),
+                )
+                .build()
+                .unwrap();
+
+            *req.uri_mut() = uri;
+            req.headers_mut()
+                .insert("x-api-key", token.as_ref().clone());
+
+            if *SPEAKEASY_SERVER_SECURE {
+                let client = HyperClient::builder()
+                    .http2_only(true)
+                    .build(HttpsConnector::new().expect("Need OpenSSL"));
+                client.request(req)
+            } else {
+                let insecure_client = HyperClient::builder().http2_only(true).build_http();
+                insecure_client.request(req)
+            }
+        });
+
+        let mut client = EmbedAccessTokenServiceClient::new(add_origin);
+        let request = TonicRequest::new(request);
+
+        let response = client
+            .get(request)
+            .await
+            .map_err(Error::UnableToGetEmbeddedAccessToken)?
+            .into_inner();
+
+        Ok(response)
+    }
 }
 
 impl Transport for GrpcClient {
@@ -86,13 +145,8 @@ impl Transport for GrpcClient {
         // NOTE: Using hyper directly as there seems to be a bug with tonic v0.3 throwing
         // an error from rustls. When making the middleware for actix4 we can hopefully
         // avoid doing this and just use the client directly from tonic.
-        let insecure_client = HyperClient::builder().http2_only(true).build_http();
-        let client = HyperClient::builder()
-            .http2_only(true)
-            .build(HttpsConnector::new().expect("Need OpenSSL"));
 
         let uri = Uri::from_str(&SPEAKEASY_SERVER_URL).unwrap();
-
         let authority = uri
             .authority()
             .ok_or_else(|| Self::Error::InvalidServerError("authority".to_string()))?
@@ -118,8 +172,12 @@ impl Transport for GrpcClient {
                 .insert("x-api-key", token.as_ref().clone());
 
             if *SPEAKEASY_SERVER_SECURE {
+                let client = HyperClient::builder()
+                    .http2_only(true)
+                    .build(HttpsConnector::new().expect("Need OpenSSL"));
                 client.request(req)
             } else {
+                let insecure_client = HyperClient::builder().http2_only(true).build_http();
                 insecure_client.request(req)
             }
         });

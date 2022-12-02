@@ -256,6 +256,9 @@ pub mod controller;
 pub mod masking;
 pub mod middleware;
 
+use crate::speakeasy_protos::embedaccesstoken::{
+    EmbedAccessTokenRequest, EmbedAccessTokenResponse,
+};
 use http::header::InvalidHeaderValue;
 use thiserror::Error;
 use transport::GrpcClient;
@@ -275,6 +278,12 @@ pub type GenericController<T> = controller::Controller<T>;
 #[doc(hidden)]
 pub type GenericSpeakeasySdk<T> = sdk::GenericSpeakeasySdk<T>;
 
+#[cfg(feature = "tokio")]
+type GrpcStatus = tonic::Status;
+
+#[cfg(feature = "tokio02")]
+type GrpcStatus = tonic03::Status;
+
 /// General error struct for the crate
 #[derive(Debug, Error)]
 pub enum Error {
@@ -284,6 +293,8 @@ pub enum Error {
     RequestNotSaved,
     #[error("invalid server address, incorrect: {0}")]
     InvalidServerError(String),
+    #[error("unable to get embedded access token")]
+    UnableToGetEmbeddedAccessToken(#[from] GrpcStatus),
 }
 
 /// Configuration struct for configuring the global speakeasy SDK instance
@@ -316,5 +327,14 @@ impl From<Config> for RequestConfig {
             api_id: config.api_id,
             version_id: config.version_id,
         }
+    }
+}
+
+impl SpeakeasySdk {
+    pub async fn get_embedded_access_token(
+        &self,
+        request: EmbedAccessTokenRequest,
+    ) -> Result<EmbedAccessTokenResponse, Error> {
+        self.transport.get_embedded_access_token(request).await
     }
 }

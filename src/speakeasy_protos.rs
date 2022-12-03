@@ -1,5 +1,6 @@
 #[cfg(feature = "tokio02")]
 mod tokio02 {
+    mod embed_access_token_client;
     mod ingest_service_client;
 
     pub mod ingest {
@@ -10,7 +11,13 @@ mod tokio02 {
         pub use speakeasy_protos_tokio_02::ingest::*;
     }
 
-    pub use speakeasy_protos_tokio_02::embedaccesstoken;
+    pub mod embedaccesstoken {
+        pub mod embed_access_token_service_client {
+            pub use crate::speakeasy_protos::tokio02::embed_access_token_client::EmbedAccessTokenServiceClient;
+        }
+
+        pub use speakeasy_protos_tokio_02::embedaccesstoken::*;
+    }
 }
 
 #[cfg(feature = "tokio02")]

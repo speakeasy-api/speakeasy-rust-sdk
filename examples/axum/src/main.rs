@@ -1,6 +1,6 @@
 use axum::{
     body::Bytes,
-    extract::{DefaultBodyLimit, Path},
+    extract::{DefaultBodyLimit, Path, State},
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
@@ -44,8 +44,8 @@ async fn upload(item: Bytes) -> impl IntoResponse {
 }
 
 async fn use_controller(
-    Json(item): Json<Person>,
     Extension(controller): Extension<Arc<RwLock<MiddlewareController>>>,
+    Json(item): Json<Person>,
 ) -> impl IntoResponse {
     println!("json: {:?}", &item);
 
@@ -67,6 +67,34 @@ async fn use_controller(
         .set_customer_id("123customer_id".to_string());
 
     (StatusCode::CREATED, Json(item))
+}
+
+async fn print_access_token(State(app_state): State<AppState>) -> impl IntoResponse {
+    use speakeasy_rust_sdk::speakeasy_protos::embedaccesstoken::{
+        embed_access_token_request::Filter, EmbedAccessTokenRequest,
+    };
+
+    let request = EmbedAccessTokenRequest {
+        filters: vec![Filter {
+            key: "customer_id".to_string(),
+            operator: "=".to_string(),
+            value: "a_customer_id".to_string(),
+        }],
+        ..Default::default()
+    };
+
+    let token_response = app_state
+        .speakeasy_sdk
+        .get_embedded_access_token(request)
+        .await
+        .unwrap();
+
+    format!("Access token: {}", token_response.access_token)
+}
+
+#[derive(Debug, Clone)]
+struct AppState {
+    speakeasy_sdk: Arc<SpeakeasySdk>,
 }
 
 #[tokio::main]
@@ -103,6 +131,10 @@ async fn main() {
     sdk.masking
         .with_response_field_mask_string("secret", StringMaskingOption::default());
 
+    let app_state = AppState {
+        speakeasy_sdk: Arc::new(sdk.clone()),
+    };
+
     let speakeasy_middleware = Middleware::new(sdk);
     let (request_capture, response_capture) = speakeasy_middleware.into();
 
@@ -112,9 +144,11 @@ async fn main() {
         .route("/greet/:name", get(greet))
         .route("/use_controller", post(use_controller))
         .route("/upload", post(upload))
+        .route("/print_access_token", get(print_access_token))
         .layer(DefaultBodyLimit::max(1024 * 1024 * 5))
         .layer(ServiceBuilder::new().layer(request_capture))
-        .layer(ServiceBuilder::new().layer(response_capture));
+        .layer(ServiceBuilder::new().layer(response_capture))
+        .with_state(app_state);
 
     // run our app with hyper
     // `axum::Server` is a re-export of `hyper::Server`

@@ -236,6 +236,37 @@ The [Masking](crate::masking::Masking) struct can be set with a number of differ
 - `masking.with_request_field_mask_number` - **with_request_field_mask_number** will mask the specified request body fields with an optional mask. Supports number fields only. Matches using regex.
 - `masking.with_response_field_mask_string` - **with_response_field_mask_string** will mask the specified response body fields with an optional mask. Supports string fields only. Matches using regex.
 - `masking.with_response_field_mask_number` - **with_response_field_mask_number** will mask the specified response body fields with an optional mask. Supports number fields only. Matches using regex.
+
+
+### Embedded Request Viewer Access Tokens
+
+The Speakeasy SDK can generate access tokens for the [Embedded Request Viewer](https://docs.speakeasyapi.dev/docs/using-speakeasy/build-dev-portals/intro/index.html) that can be used to view requests captured by the SDK.
+
+For documentation on how to configure filters, find that [HERE](https://docs.speakeasyapi.dev/docs/using-speakeasy/build-dev-portals/intro/index.html).
+
+Below are some examples on how to generate access tokens:
+
+```ignore
+use speakeasy_rust_sdk::speakeasy_protos::embedaccesstoken::{
+    embed_access_token_request::Filter, EmbedAccessTokenRequest,
+};
+
+let request = EmbedAccessTokenRequest {
+    filters: vec![Filter {
+        key: "customer_id".to_string(),
+        operator: "=".to_string(),
+        value: "a_customer_id".to_string(),
+    }],
+    ..Default::default()
+};
+
+let token_response = app_state
+    .speakeasy_sdk
+    .get_embedded_access_token(request)
+    .await
+    .unwrap();
+```
+
 */
 
 mod generic_http;
@@ -247,7 +278,6 @@ pub(crate) mod async_runtime;
 
 #[doc(hidden)]
 pub mod sdk;
-#[doc(hidden)]
 pub mod speakeasy_protos;
 #[doc(hidden)]
 pub mod transport;
@@ -256,6 +286,9 @@ pub mod controller;
 pub mod masking;
 pub mod middleware;
 
+use crate::speakeasy_protos::embedaccesstoken::{
+    EmbedAccessTokenRequest, EmbedAccessTokenResponse,
+};
 use http::header::InvalidHeaderValue;
 use thiserror::Error;
 use transport::GrpcClient;
@@ -275,6 +308,12 @@ pub type GenericController<T> = controller::Controller<T>;
 #[doc(hidden)]
 pub type GenericSpeakeasySdk<T> = sdk::GenericSpeakeasySdk<T>;
 
+#[cfg(feature = "tokio")]
+type GrpcStatus = tonic::Status;
+
+#[cfg(feature = "tokio02")]
+type GrpcStatus = tonic03::Status;
+
 /// General error struct for the crate
 #[derive(Debug, Error)]
 pub enum Error {
@@ -284,6 +323,8 @@ pub enum Error {
     RequestNotSaved,
     #[error("invalid server address, incorrect: {0}")]
     InvalidServerError(String),
+    #[error("unable to get embedded access token")]
+    UnableToGetEmbeddedAccessToken(#[from] GrpcStatus),
 }
 
 /// Configuration struct for configuring the global speakeasy SDK instance
@@ -316,5 +357,14 @@ impl From<Config> for RequestConfig {
             api_id: config.api_id,
             version_id: config.version_id,
         }
+    }
+}
+
+impl SpeakeasySdk {
+    pub async fn get_embedded_access_token(
+        &self,
+        request: EmbedAccessTokenRequest,
+    ) -> Result<EmbedAccessTokenResponse, Error> {
+        self.transport.get_embedded_access_token(request).await
     }
 }

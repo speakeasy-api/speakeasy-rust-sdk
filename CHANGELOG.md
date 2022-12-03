@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Added support for embedded access tokens
+
 ## [0.3.0] - 2022-11-15
 
 - Add middleware for the Actix framework (version 4)

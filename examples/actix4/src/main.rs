@@ -66,6 +66,34 @@ async fn use_controller(
     HttpResponse::Ok().json(item.0)
 }
 
+#[get("/print_access_token")]
+async fn print_access_token(app_state: web::Data<AppState>) -> impl Responder {
+    use speakeasy_rust_sdk::speakeasy_protos::embedaccesstoken::{
+        embed_access_token_request::Filter, EmbedAccessTokenRequest,
+    };
+
+    let request = EmbedAccessTokenRequest {
+        filters: vec![Filter {
+            key: "customer_id".to_string(),
+            operator: "=".to_string(),
+            value: "a_customer_id".to_string(),
+        }],
+        ..Default::default()
+    };
+
+    let token_response = app_state
+        .speakeasy_sdk
+        .get_embedded_access_token(request)
+        .await
+        .unwrap();
+
+    format!("Access token: {}", token_response.access_token)
+}
+
+struct AppState {
+    speakeasy_sdk: SpeakeasySdk,
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
@@ -101,17 +129,24 @@ async fn main() -> std::io::Result<()> {
         sdk.masking
             .with_response_field_mask_string("secret", StringMaskingOption::default());
 
+        // AppState
+        let app_state = AppState {
+            speakeasy_sdk: sdk.clone(),
+        };
+
         let speakeasy_middleware = Middleware::new(sdk);
         let (request_capture, response_capture) = speakeasy_middleware.into();
 
         App::new()
             .app_data(web::PayloadConfig::new(3_145_728))
+            .app_data(web::Data::new(app_state))
             .wrap(request_capture)
             .wrap(response_capture)
             .service(greet)
             .service(index)
             .service(upload)
             .service(use_controller)
+            .service(print_access_token)
     })
     .bind(("127.0.0.1", 8080))?
     .run()

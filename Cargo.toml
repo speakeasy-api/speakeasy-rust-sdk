@@ -6,7 +6,7 @@ homepage = "https://www.speakeasyapi.dev"
 license = "Apache-2.0"
 name = "speakeasy-rust-sdk"
 repository = "https://github.com/speakeasy-api/speakeasy-rust-sdk"
-version = "0.3.0"
+version = "0.4.0"
 
 exclude = [
   "examples",
@@ -96,8 +96,8 @@ actix-service = {version = "2.0", optional = true}
 actix-web = {version = "4.0", optional = true}
 
 # axum
-axum = {version = "0.5", features = ["matched-path"], optional = true}
-axum-extra = {version = "0.3", features = ["cookie"], optional = true}
+axum = {version = "0.6", features = ["matched-path"], optional = true}
+axum-extra = {version = "0.4", features = ["cookie"], optional = true}
 
 # latest deps
 http-body = {version = "0.4", optional = true}

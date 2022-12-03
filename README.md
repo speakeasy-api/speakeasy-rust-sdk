@@ -228,6 +228,35 @@ The `Masking` struct can be set with a number of different options to mask sensi
 
 For complete docs on masking see the [docs.rs/speakeasy-rust-sdk](https://docs.rs/speakeasy-rust-sdk/latest/speakeasy_rust_sdk/)
 
+### Embedded Request Viewer Access Tokens
+
+The Speakeasy SDK can generate access tokens for the [Embedded Request Viewer](https://docs.speakeasyapi.dev/docs/using-speakeasy/build-dev-portals/intro/index.html) that can be used to view requests captured by the SDK.
+
+For documentation on how to configure filters, find that [HERE](https://docs.speakeasyapi.dev/docs/using-speakeasy/build-dev-portals/intro/index.html).
+
+Below are some examples on how to generate access tokens:
+
+```rust
+use speakeasy_rust_sdk::speakeasy_protos::embedaccesstoken::{
+    embed_access_token_request::Filter, EmbedAccessTokenRequest,
+};
+
+let request = EmbedAccessTokenRequest {
+    filters: vec![Filter {
+        key: "customer_id".to_string(),
+        operator: "=".to_string(),
+        value: "a_customer_id".to_string(),
+    }],
+    ..Default::default()
+};
+
+let token_response = app_state
+    .speakeasy_sdk
+    .get_embedded_access_token(request)
+    .await
+    .unwrap();
+```
+
 ### Examples
 
 - Axum - [examples/axum/](examples/axum/)

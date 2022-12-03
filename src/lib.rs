@@ -247,7 +247,6 @@ pub(crate) mod async_runtime;
 
 #[doc(hidden)]
 pub mod sdk;
-#[doc(hidden)]
 pub mod speakeasy_protos;
 #[doc(hidden)]
 pub mod transport;

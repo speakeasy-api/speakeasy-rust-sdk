@@ -198,7 +198,9 @@ where
         let controller = ext.get::<Arc<RwLock<Controller<T>>>>().cloned();
 
         if controller.is_none() {
-            log::error!("No controller found in extensions, please add request layer to your axum service");
+            log::error!(
+                "No controller found in extensions, please add request layer to your axum service"
+            );
         }
 
         let generic_response = GenericResponse::new(&res);

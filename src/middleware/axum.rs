@@ -10,7 +10,6 @@ use crate::{transport::Transport, GenericSpeakeasySdk};
 /// Container struct the contains the middleware's for capturing request and response
 pub struct Middleware<T: Transport + Send + Clone + 'static> {
     pub(crate) request_capture: request::SpeakeasySdk<T>,
-    // TODO: switch back
     pub(crate) response_capture: response::SpeakeasySdk<T>,
 }
 

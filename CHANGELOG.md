@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.4.0] - 2023-02-01
 
 - Added support for embedded access tokens
 

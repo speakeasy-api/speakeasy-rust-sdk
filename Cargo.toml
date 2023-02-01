@@ -71,7 +71,7 @@ thiserror = "1.0"
 # utils
 bytes = "1.2.1"
 chrono = {version = "0.4.22", default-features = false, features = ["alloc", "std", "clock"]}
-har = "0.7.1"
+har = "0.8.0"
 once_cell = "1.14.0"
 regex = "1.6.0"
 uuid = {version = "1.1.2", features = ["v4", "fast-rng"]}

@@ -21,7 +21,7 @@ Documentation available at: [docs.rs/speakeasy-rust-sdk](<(https://docs.rs/speak
 
 Run:
 
-```
+```[ignore]
 cargo add speakeasy-rust-sdk --features actix4
 ```
 

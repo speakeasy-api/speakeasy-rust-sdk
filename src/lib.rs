@@ -387,7 +387,10 @@ impl SpeakeasySdk {
             SpeakeasySdk::Grpc(inner) => inner.transport.get_embedded_access_token(request).await,
         }
     }
+}
 
+#[cfg(not(feature = "custom_transport"))]
+impl SpeakeasySdk {
     pub fn masking(&mut self) -> &mut Masking {
         match self {
             SpeakeasySdk::Grpc(inner) => &mut inner.masking,

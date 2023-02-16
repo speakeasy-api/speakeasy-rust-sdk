@@ -216,7 +216,7 @@ pub mod mock {
         }
     }
 
-    impl Transport for Arc<GrpcMock> {
+    impl Transport for GrpcMock {
         type Output = ();
         type Error = ();
 

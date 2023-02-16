@@ -26,6 +26,16 @@ impl<T: Transport + Send + Clone + 'static> GenericSpeakeasySdk<T> {
             transport,
         }
     }
+
+    #[cfg(feature = "mock")]
+    pub fn into_sdk(self) -> crate::SpeakeasySdk {
+        crate::SpeakeasySdk::Mock(self)
+    }
+
+    #[cfg(feature = "custom_transport")]
+    pub fn into_sdk(self) -> crate::SpeakeasySdk<T> {
+        crate::SpeakeasySdk::CustomTransport(self)
+    }
 }
 
 impl GenericSpeakeasySdk<GrpcClient> {

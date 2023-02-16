@@ -1,10 +1,7 @@
 use crate::{
     transport::{GrpcClient, Transport},
-    Config, Error, Masking, RequestConfig,
+    Config, Error, Masking, RequestConfig, SpeakeasySdk,
 };
-
-#[cfg(not(any(feature = "mock", feature = "custom_transport")))]
-use crate::SpeakeasySdk;
 
 /// Speakeasy SDK instance
 #[doc(hidden)]
@@ -77,7 +74,6 @@ impl GenericSpeakeasySdk<GrpcClient> {
     }
 }
 
-#[cfg(not(any(feature = "mock", feature = "custom_transport")))]
 impl SpeakeasySdk {
     pub fn try_new(config: Config) -> Result<Self, Error> {
         let generic_sdk = GenericSpeakeasySdk::try_new(config)?;

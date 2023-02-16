@@ -197,16 +197,22 @@ impl Transport for GrpcClient {
     }
 }
 
-#[cfg(test)]
-pub(crate) mod tests {
+#[cfg(feature = "mock")]
+pub(crate) mod mock {
     use super::*;
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub struct GrpcMock {}
 
     impl GrpcMock {
         pub fn new() -> Self {
             Self {}
+        }
+    }
+
+    impl Default for GrpcMock {
+        fn default() -> Self {
+            Self::new()
         }
     }
 

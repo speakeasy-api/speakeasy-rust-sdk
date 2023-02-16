@@ -18,9 +18,9 @@ where
     T: Transport + Send + Clone + 'static,
 {
     /// Create new middleware
-    pub fn new(sdk: GenericSpeakeasySdk<T>) -> Self {
+    pub fn new(sdk: impl Into<GenericSpeakeasySdk<T>>) -> Self {
         Self {
-            request_capture: request::SpeakeasySdk::new(sdk),
+            request_capture: request::SpeakeasySdk::new(sdk.into()),
             response_capture: response::SpeakeasySdk::new(),
         }
     }

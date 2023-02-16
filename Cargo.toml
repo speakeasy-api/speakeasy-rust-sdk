@@ -63,6 +63,9 @@ tokio02 = [
   "dep:hyper-openssl08",
 ]
 
+custom_transport = []
+mock = []
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 # error handling

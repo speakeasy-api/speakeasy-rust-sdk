@@ -177,7 +177,7 @@ async fn main() -> std::io::Result<()> {
         sdk.masking
             .with_request_field_mask_string("password", StringMaskingOption::default());
 
-        // Configure masking for response
+        // Configure masking for **response**
         sdk.masking
             .with_response_field_mask_string("secret", StringMaskingOption::default());
 

@@ -286,9 +286,6 @@ pub mod controller;
 pub mod masking;
 pub mod middleware;
 
-use crate::speakeasy_protos::embedaccesstoken::{
-    EmbedAccessTokenRequest, EmbedAccessTokenResponse,
-};
 use http::header::InvalidHeaderValue;
 use thiserror::Error;
 use transport::GrpcClient;
@@ -296,8 +293,28 @@ use transport::GrpcClient;
 /// All masking options, see functions for more details on setting them
 pub type Masking = masking::Masking;
 
+#[cfg(not(any(feature = "mock", feature = "custom_transport")))]
+use crate::speakeasy_protos::embedaccesstoken::{
+    EmbedAccessTokenRequest, EmbedAccessTokenResponse,
+};
+
 /// Speakeasy SDK instance and controller
-pub type SpeakeasySdk = GenericSpeakeasySdk<GrpcClient>;
+#[cfg(not(feature = "custom_transport"))]
+#[derive(Debug, Clone)]
+pub enum SpeakeasySdk {
+    /// Standard Speakeasy SDK
+    Grpc(GenericSpeakeasySdk<GrpcClient>),
+    #[cfg(feature = "mock")]
+    /// Mock Speakeasy SDK used for testing
+    Mock(Box<GenericSpeakeasySdk<transport::mock::GrpcMock>>),
+}
+
+/// Custom GRPC client
+#[cfg(feature = "custom_transport")]
+#[derive(Debug, Clone)]
+pub enum SpeakeasySdk<T> {
+    CustomTransport(GenericSpeakeasySdk<T>),
+}
 
 /// Middleware controller, use for setting request specific [Masking], [path-hint](MiddlewareController::set_path_hint()) and [customer-ids](MiddlewareController::set_customer_id())
 pub type MiddlewareController = GenericController<GrpcClient>;
@@ -360,11 +377,59 @@ impl From<Config> for RequestConfig {
     }
 }
 
+#[cfg(not(any(feature = "mock", feature = "custom_transport")))]
 impl SpeakeasySdk {
     pub async fn get_embedded_access_token(
         &self,
         request: EmbedAccessTokenRequest,
     ) -> Result<EmbedAccessTokenResponse, Error> {
-        self.transport.get_embedded_access_token(request).await
+        match self {
+            SpeakeasySdk::Grpc(inner) => inner.transport.get_embedded_access_token(request).await,
+        }
+    }
+
+    pub async fn masking(&mut self) -> &mut Masking {
+        match self {
+            SpeakeasySdk::Grpc(inner) => &mut inner.masking,
+            #[cfg(feature = "mock")]
+            SpeakeasySdk::Mock(inner) => &mut inner.masking,
+        }
+    }
+}
+
+#[cfg(feature = "custom_transport")]
+impl<T> SpeakeasySdk<T> {
+    pub async fn masking(&mut self) -> &mut Masking {
+        match self {
+            SpeakeasySdk::CustomTransport(inner) => &mut inner.masking,
+        }
+    }
+}
+
+#[cfg(not(any(feature = "mock", feature = "custom_transport")))]
+impl From<SpeakeasySdk> for GenericSpeakeasySdk<transport::GrpcClient> {
+    fn from(sdk: SpeakeasySdk) -> Self {
+        match sdk {
+            SpeakeasySdk::Grpc(inner) => inner,
+        }
+    }
+}
+
+#[cfg(feature = "mock")]
+impl From<SpeakeasySdk> for GenericSpeakeasySdk<transport::mock::GrpcMock> {
+    fn from(sdk: SpeakeasySdk) -> Self {
+        match sdk {
+            SpeakeasySdk::Mock(inner) => *inner,
+            _ => panic!("must use mock client when mock feature is enabled"),
+        }
+    }
+}
+
+#[cfg(feature = "custom_transport")]
+impl<T> From<SpeakeasySdk<T>> for GenericSpeakeasySdk<T> {
+    fn from(sdk: SpeakeasySdk<T>) -> Self {
+        match sdk {
+            SpeakeasySdk::CustomTransport(inner) => inner,
+        }
     }
 }

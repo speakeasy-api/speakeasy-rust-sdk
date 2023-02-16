@@ -198,7 +198,7 @@ impl Transport for GrpcClient {
 }
 
 #[cfg(feature = "mock")]
-pub(crate) mod mock {
+pub mod mock {
     use super::*;
 
     #[derive(Debug, Clone)]

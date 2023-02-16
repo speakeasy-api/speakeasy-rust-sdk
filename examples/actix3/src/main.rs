@@ -117,16 +117,16 @@ async fn main() -> std::io::Result<()> {
         let mut sdk = SpeakeasySdk::try_new(config).expect("API key is valid");
 
         // Configure masking for query
-        sdk.masking.with_query_string_mask("secret", "********");
-        sdk.masking
+        sdk.masking().with_query_string_mask("secret", "********");
+        sdk.masking()
             .with_query_string_mask("password", StringMaskingOption::default());
 
         // Configure masking for request
-        sdk.masking
+        sdk.masking()
             .with_request_field_mask_string("password", StringMaskingOption::default());
 
         // Configure masking for response
-        sdk.masking
+        sdk.masking()
             .with_response_field_mask_string("secret", StringMaskingOption::default());
 
         let app_state = AppState {

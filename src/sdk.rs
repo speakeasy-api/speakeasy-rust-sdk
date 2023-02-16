@@ -10,8 +10,7 @@ use crate::SpeakeasySdk;
 #[doc(hidden)]
 #[derive(Debug, Clone)]
 pub struct GenericSpeakeasySdk<GrpcClient> {
-    pub masking: Masking,
-
+    pub(crate) masking: Masking,
     pub(crate) config: RequestConfig,
     pub(crate) transport: GrpcClient,
 }
@@ -51,8 +50,8 @@ impl GenericSpeakeasySdk<GrpcClient> {
     ///
     /// // Configure masking for query
     /// // see [Masking::with_query_string_mask] for more options
-    /// sdk.masking.with_query_string_mask("secret", "********");
-    /// sdk.masking.with_query_string_mask("password", StringMaskingOption::default());
+    /// sdk.masking().with_query_string_mask("secret", "********");
+    /// sdk.masking().with_query_string_mask("password", StringMaskingOption::default());
     ///
     /// // Configure other masks
     /// // see [Masking] for more options

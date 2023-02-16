@@ -1,14 +1,13 @@
 use crate::{
     transport::{GrpcClient, Transport},
-    Config, Error, Masking, RequestConfig,
+    Config, Error, Masking, RequestConfig, SpeakeasySdk,
 };
 
 /// Speakeasy SDK instance
 #[doc(hidden)]
 #[derive(Debug, Clone)]
 pub struct GenericSpeakeasySdk<GrpcClient> {
-    pub masking: Masking,
-
+    pub(crate) masking: Masking,
     pub(crate) config: RequestConfig,
     pub(crate) transport: GrpcClient,
 }
@@ -23,6 +22,18 @@ impl<T: Transport + Send + Clone + 'static> GenericSpeakeasySdk<T> {
             config,
             transport,
         }
+    }
+
+    #[cfg(feature = "custom_transport")]
+    pub fn into_sdk(self) -> crate::SpeakeasySdk<T> {
+        crate::SpeakeasySdk::CustomTransport(self)
+    }
+}
+
+#[cfg(feature = "mock")]
+impl GenericSpeakeasySdk<crate::transport::mock::GrpcMock> {
+    pub fn into_sdk(self) -> crate::SpeakeasySdk {
+        crate::SpeakeasySdk::Mock(Box::new(self))
     }
 }
 
@@ -48,8 +59,8 @@ impl GenericSpeakeasySdk<GrpcClient> {
     ///
     /// // Configure masking for query
     /// // see [Masking::with_query_string_mask] for more options
-    /// sdk.masking.with_query_string_mask("secret", "********");
-    /// sdk.masking.with_query_string_mask("password", StringMaskingOption::default());
+    /// sdk.masking().with_query_string_mask("secret", "********");
+    /// sdk.masking().with_query_string_mask("password", StringMaskingOption::default());
     ///
     /// // Configure other masks
     /// // see [Masking] for more options
@@ -60,5 +71,12 @@ impl GenericSpeakeasySdk<GrpcClient> {
             config: config.into(),
             masking: Default::default(),
         })
+    }
+}
+
+impl SpeakeasySdk {
+    pub fn try_new(config: Config) -> Result<Self, Error> {
+        let generic_sdk = GenericSpeakeasySdk::try_new(config)?;
+        Ok(Self::Grpc(generic_sdk))
     }
 }

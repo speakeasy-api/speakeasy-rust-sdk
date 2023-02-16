@@ -6,7 +6,7 @@ homepage = "https://www.speakeasyapi.dev"
 license = "Apache-2.0"
 name = "speakeasy-rust-sdk"
 repository = "https://github.com/speakeasy-api/speakeasy-rust-sdk"
-version = "0.4.0"
+version = "0.5.0"
 
 exclude = [
   "examples",
@@ -62,6 +62,9 @@ tokio02 = [
   "dep:speakeasy-protos-tokio-02",
   "dep:hyper-openssl08",
 ]
+
+custom_transport = []
+mock = []
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]

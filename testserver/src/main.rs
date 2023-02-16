@@ -180,7 +180,7 @@ impl Transport for GrpcMock {
         let test_data_folder = format!("{}/testresults", env!("CARGO_MANIFEST_DIR"));
         let test_result_file = format!("{}/{}.har", test_data_folder, test_name);
 
-        let mut file = File::create(&test_result_file).unwrap();
+        let mut file = File::create(test_result_file).unwrap();
         file.write_all(request.har.as_bytes()).unwrap();
 
         Ok(())

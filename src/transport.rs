@@ -197,11 +197,11 @@ impl Transport for GrpcClient {
     }
 }
 
-#[cfg(test)]
-pub(crate) mod tests {
+#[cfg(feature = "mock")]
+pub mod mock {
     use super::*;
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub struct GrpcMock {}
 
     impl GrpcMock {
@@ -210,7 +210,13 @@ pub(crate) mod tests {
         }
     }
 
-    impl Transport for Arc<GrpcMock> {
+    impl Default for GrpcMock {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
+    impl Transport for GrpcMock {
         type Output = ();
         type Error = ();
 

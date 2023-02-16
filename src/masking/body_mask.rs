@@ -282,7 +282,7 @@ mod tests {
             Test {
                 name: "successfully masks body with single string field",
                 body: r#"{"test": "test"}"#,
-                expected: r#"{"test": "testmask"}"#,
+                expected: r#"{"test":"testmask"}"#,
                 string_masks: hashmap! {
                     "test".to_string() => "testmask".to_string(),
                 },
@@ -291,7 +291,7 @@ mod tests {
             Test {
                 name: "successfully masks body with single int field",
                 body: r#"{"test": 123}"#,
-                expected: r#"{"test": -123456789}"#,
+                expected: r#"{"test":-123456789}"#,
                 string_masks: hashmap! {},
                 number_masks: hashmap! {
                     "test".to_string() => -123456789,
@@ -300,7 +300,7 @@ mod tests {
             Test {
                 name: "successfully masks body with single negative field",
                 body: r#"{"test": -123}"#,
-                expected: r#"{"test": -123456789}"#,
+                expected: r#"{"test":-123456789}"#,
                 string_masks: hashmap! {},
                 number_masks: hashmap! {
                     "test".to_string() => -123456789,
@@ -309,7 +309,7 @@ mod tests {
             Test {
                 name: "successfully masks body with single float field",
                 body: r#"{"test": 123.123}"#,
-                expected: r#"{"test": -123456789}"#,
+                expected: r#"{"test":-123456789}"#,
                 string_masks: hashmap! {},
                 number_masks: hashmap! {
                     "test".to_string() => -123456789,
@@ -318,7 +318,7 @@ mod tests {
             Test {
                 name: "successfully masks body with multiple masking fields",
                 body: r#"{"test": "test", "another_test": "secret", "not_a_secret": "not a secret"}"#,
-                expected: r#"{"test": "testmask", "another_test": "testmask", "not_a_secret": "not a secret"}"#,
+                expected: r#"{"test":"testmask", "another_test":"testmask", "not_a_secret": "not a secret"}"#,
                 string_masks: hashmap! {
                     "test".to_string() => "testmask".to_string(),
                     "another_test".to_string() => "testmask".to_string(),
@@ -328,7 +328,7 @@ mod tests {
             Test {
                 name: "successfully masks body with nested fields",
                 body: r#"{"test": {"test": "test", "test1": 123}}"#,
-                expected: r#"{"test": {"test": "testmask", "test1": -123456789}}"#,
+                expected: r#"{"test": {"test":"testmask", "test1":-123456789}}"#,
                 string_masks: hashmap! {
                     "test".to_string() => "testmask".to_string(),
                 },
@@ -345,8 +345,8 @@ mod tests {
                 }"#,
                 expected: r#"
                 "test": {
-                    "test": "testmask",
-                    "test1": -123456789
+                    "test":"testmask",
+                    "test1":-123456789
                 }"#,
                 string_masks: hashmap! {
                     "test".to_string() => "testmask".to_string(),
@@ -358,7 +358,7 @@ mod tests {
             Test {
                 name: "successfully masks body with complex string field",
                 body: r#"{"test": "\",{abc}: .\""}"#,
-                expected: r#"{"test": "testmask"}"#,
+                expected: r#"{"test":"testmask"}"#,
                 string_masks: hashmap! {
                     "test".to_string() => "testmask".to_string()
                 },
@@ -367,7 +367,7 @@ mod tests {
             Test {
                 name: "successfully masks body with complex field key",
                 body: r#"{"test\"hello\": ": "\",{abc}: .\""}"#,
-                expected: r#"{"test\"hello\": ": "testmask"}"#,
+                expected: r#"{"test\"hello\": ":"testmask"}"#,
                 string_masks: hashmap! {
                     r#"test\"hello\": "#.to_string() => "testmask".to_string()
                 },

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2023-02-16
+
 - **BREAKING** Have to use `masking()` function instead of accessing `masking` field directly on SDK
 
 - Made testing easier by exposing `GrpcMock` and ability to pass `SpeakeasySdk` directly without needing to use generics

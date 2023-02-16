@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+- **BREAKING** Have to use `masking()` function instead of accessing `masking` field directly on SDK
+
+- Made testing easier by exposing `GrpcMock` and ability to pass `SpeakeasySdk` directly without needing to use generics
+
 ## [0.4.0] - 2023-02-01
 
 - Added support for embedded access tokens
